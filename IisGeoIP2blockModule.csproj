@@ -1,0 +1,187 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>9.0.21022</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{3AB8BCAA-3C15-44ED-AB5A-33C07FEBEBC0}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>IISGeoIP2blockModule</RootNamespace>
+    <AssemblyName>IISGeoIP2blockModule</AssemblyName>
+    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <SignAssembly>true</SignAssembly>
+    <AssemblyOriginatorKeyFile>IisGeoblockModule.snk</AssemblyOriginatorKeyFile>
+    <FileUpgradeFlags>
+    </FileUpgradeFlags>
+    <UpgradeBackupLocation>
+    </UpgradeBackupLocation>
+    <OldToolsVersion>3.5</OldToolsVersion>
+    <TargetFrameworkProfile />
+    <PublishUrl>publish\</PublishUrl>
+    <Install>true</Install>
+    <InstallFrom>Disk</InstallFrom>
+    <UpdateEnabled>false</UpdateEnabled>
+    <UpdateMode>Foreground</UpdateMode>
+    <UpdateInterval>7</UpdateInterval>
+    <UpdateIntervalUnits>Days</UpdateIntervalUnits>
+    <UpdatePeriodically>false</UpdatePeriodically>
+    <UpdateRequired>false</UpdateRequired>
+    <MapFileExtensions>true</MapFileExtensions>
+    <ApplicationRevision>0</ApplicationRevision>
+    <ApplicationVersion>1.0.0.%2a</ApplicationVersion>
+    <IsWebBootstrapper>false</IsWebBootstrapper>
+    <UseApplicationTrust>false</UseApplicationTrust>
+    <BootstrapperEnabled>true</BootstrapperEnabled>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+    <CodeAnalysisRuleSet />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <Prefer32Bit>false</Prefer32Bit>
+    <CodeAnalysisRuleSet />
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.CSharp">
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Microsoft.Web.Administration, Version=7.9.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\Windows\System32\inetsrv\Microsoft.Web.Administration.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Microsoft.Web.Management, Version=7.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\..\..\Windows\System32\inetsrv\Microsoft.Web.Management.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>bin\Release\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core">
+      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+    </Reference>
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Numerics" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="AddExceptionRuleForm.cs" />
+    <Compile Include="AddExceptionRuleForm.Designer.cs">
+      <DependentUpon>AddExceptionRuleForm.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Countries.cs" />
+    <Compile Include="GeoblockConfiguration.cs" />
+    <Compile Include="GeoblockConfigurationSection.cs" />
+    <Compile Include="Geoblocker.cs" />
+    <Compile Include="GeoblockModuleDialogPage.cs" />
+    <Compile Include="GeoblockHttpModule.cs" />
+    <Compile Include="GeoblockModuleProvider.cs" />
+    <Compile Include="GeoblockModule.cs" />
+    <Compile Include="AddExceptionRuleTaskList.cs" />
+    <Compile Include="GeoblockModuleService.cs" />
+    <Compile Include="GeoblockModuleServiceProxy .cs" />
+    <Compile Include="IPUtilities.cs" />
+    <Compile Include="MaxMind.Db\ArrayBuffer.cs" />
+    <Compile Include="MaxMind.Db\Buffer.cs" />
+    <Compile Include="MaxMind.Db\ByteArrayEqualityComparer.cs" />
+    <Compile Include="MaxMind.Db\CachedDictionary.cs" />
+    <Compile Include="MaxMind.Db\ConstructorAttribute.cs" />
+    <Compile Include="MaxMind.Db\Decoder.cs" />
+    <Compile Include="MaxMind.Db\DeserializationException.cs" />
+    <Compile Include="MaxMind.Db\DictionaryActivatorCreator.cs" />
+    <Compile Include="MaxMind.Db\GlobalSuppressions.cs" />
+    <Compile Include="MaxMind.Db\InjectableValues.cs" />
+    <Compile Include="MaxMind.Db\InjectAttribute.cs" />
+    <Compile Include="MaxMind.Db\InvalidDatabaseException.cs" />
+    <Compile Include="MaxMind.Db\ListActivatorCreator.cs" />
+    <Compile Include="MaxMind.Db\MemoryMapBuffer.cs" />
+    <Compile Include="MaxMind.Db\Metadata.cs" />
+    <Compile Include="MaxMind.Db\ParameterAttribute.cs" />
+    <Compile Include="MaxMind.Db\Reader.cs" />
+    <Compile Include="MaxMind.Db\ReflectionUtil.cs" />
+    <Compile Include="MaxMind.Db\TypeAcivatorCreator.cs" />
+    <Compile Include="MaxMind.GeoIP2\DatabaseReader.cs" />
+    <Compile Include="MaxMind.GeoIP2\Exceptions\AddressNotFoundException.cs" />
+    <Compile Include="MaxMind.GeoIP2\Exceptions\GeoIP2Exception.cs" />
+    <Compile Include="MaxMind.GeoIP2\Exceptions\PermissionRequiredException.cs" />
+    <Compile Include="MaxMind.GeoIP2\IGeoIP2DatabaseReader.cs" />
+    <Compile Include="MaxMind.GeoIP2\IGeoIP2Provider.cs" />
+    <Compile Include="MaxMind.GeoIP2\Model\Continent.cs" />
+    <Compile Include="MaxMind.GeoIP2\Model\Country.cs" />
+    <Compile Include="MaxMind.GeoIP2\Model\MaxMind.cs" />
+    <Compile Include="MaxMind.GeoIP2\Model\NamedEntity.cs" />
+    <Compile Include="MaxMind.GeoIP2\Model\RepresentedCountry.cs" />
+    <Compile Include="MaxMind.GeoIP2\Model\Traits.cs" />
+    <Compile Include="MaxMind.GeoIP2\Responses\AbstractCountryResponse.cs" />
+    <Compile Include="MaxMind.GeoIP2\Responses\AbstractResponse.cs" />
+    <Compile Include="MaxMind.GeoIP2\Responses\CountryResponse.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RemoveExceptionRuleTaskList.cs" />
+    <Compile Include="SortableBindingList.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="IisGeoblockModule.snk" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="AddExceptionRuleForm.resx">
+      <DependentUpon>AddExceptionRuleForm.cs</DependentUpon>
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
+    <EmbeddedResource Include="GeoblockModuleDialogPage.resx">
+      <DependentUpon>GeoblockModuleDialogPage.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="resources\apply.png">
+    </EmbeddedResource>
+    <EmbeddedResource Include="resources\cancel.png">
+    </EmbeddedResource>
+    <EmbeddedResource Include="resources\geoblock.png">
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="resources\remove.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
+      <Visible>False</Visible>
+      <ProductName>.NET Framework 3.5 SP1</ProductName>
+      <Install>true</Install>
+    </BootstrapperPackage>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="MaxMind.Db\Properties\" />
+    <Folder Include="MaxMind.GeoIP2\Properties\" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
