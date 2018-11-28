@@ -6,3 +6,16 @@ Orginal source:
 https://sourceforge.net/projects/iis7geoblockmod/
 
 
+# New features
+
+- Upgraded to .Net 4.6
+- Supports new GeoIP2 database format (free GeoLite2-Country.mmdb or commercial GeoIP2-Country.mmdb) 
+- Extra deny actions:
+    - Unauthorized
+    - Forbidden
+    - Not Found
+    - Abort
+    
+# Requirements
+- IIS 7 or higher
+- Net 4 Application pool running integrated pipeline mode
