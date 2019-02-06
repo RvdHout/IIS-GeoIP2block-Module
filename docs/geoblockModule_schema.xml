@@ -1,6 +1,6 @@
 <configSchema> 
     <sectionSchema name="system.webServer/geoblockModule"> 
-        	<attribute name="enabled" type="bool" defaultValue="false" />
+        <attribute name="enabled" type="bool" defaultValue="false" />
 		<attribute name="DenyAction" type="string" defaultValue="Unauthorized" />
 		<attribute name="geoIpFilepath" type="string" defaultValue="" />
 		<attribute name="allowedMode" type="bool" defaultValue="true" />

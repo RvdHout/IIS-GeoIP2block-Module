@@ -8,8 +8,18 @@ namespace IISGeoIP2blockModule
 {
     class Countries
     {
-        public static readonly string[] CountryCodes = {
-        "--","AP","EU","AD","AE","AF","AG","AI","AL","AM","CW",
+        // ISO 3166 Country Codes
+        // https://dev.maxmind.com/geoip/legacy/codes/iso3166/
+
+        // Please note that "EU" and "AP" codes are only used when a specific country code
+        // has not been designated(see FAQ on https://dev.maxmind.com/faq/what-are-the-eu-europe-and-ap-asia-pacific-entries/). 
+        // Blocking or re-directing by "EU" or "AP" will only affect a small portion of IP addresses.
+        // Instead, you should list the countries you want to block/re-direct individually.
+
+        // Also, the "O1 Other Country" code is only used in the GeoIP City country subset databases (https://www.maxmind.com/en/geoip2-city-database-by-continent).
+
+        internal readonly static string[] CountryCodes = {
+        "AP","EU","AD","AE","AF","AG","AI","AL","AM","CW",
         "AO","AQ","AR","AS","AT","AU","AW","AZ","BA","BB",
         "BD","BE","BF","BG","BH","BI","BJ","BM","BN","BO",
         "BR","BS","BT","BV","BW","BY","BZ","CA","CC","CD",
@@ -33,12 +43,12 @@ namespace IISGeoIP2blockModule
         "TJ","TK","TM","TN","TO","TL","TR","TT","TV","TW",
         "TZ","UA","UG","UM","US","UY","UZ","VA","VC","VE",
         "VG","VI","VN","VU","WF","WS","YE","YT","RS","ZA",
-        "ZM","ME","ZW","A1","A2","O1","AX","GG","IM","JE",
-        "BL","MF","BQ","SS"
+        "ZM","ME","ZW","A1","A2","AX","GG","IM","JE","BL",
+        "MF","BQ","SS","O1","--"
         };
 
-        public static readonly string[] CountryNames = {
-        "N/A","Asia/Pacific Region","Europe","Andorra","United Arab Emirates","Afghanistan","Antigua and Barbuda","Anguilla","Albania","Armenia","Curacao",
+        internal readonly static string[] CountryNames = {
+        "Asia/Pacific Region","Europe","Andorra","United Arab Emirates","Afghanistan","Antigua and Barbuda","Anguilla","Albania","Armenia","Curacao",
         "Angola","Antarctica","Argentina","American Samoa","Austria","Australia","Aruba","Azerbaijan","Bosnia and Herzegovina","Barbados",
         "Bangladesh","Belgium","Burkina Faso","Bulgaria","Bahrain","Burundi","Benin","Bermuda","Brunei Darussalam","Bolivia",
         "Brazil","Bahamas","Bhutan","Bouvet Island","Botswana","Belarus","Belize","Canada","Cocos (Keeling) Islands","Congo, The Democratic Republic of the",
@@ -62,7 +72,7 @@ namespace IISGeoIP2blockModule
         "Tajikistan","Tokelau","Turkmenistan","Tunisia","Tonga","Timor-Leste","Turkey","Trinidad and Tobago","Tuvalu","Taiwan",
         "Tanzania, United Republic of","Ukraine","Uganda","United States Minor Outlying Islands","United States","Uruguay","Uzbekistan","Holy See (Vatican City State)","Saint Vincent and the Grenadines","Venezuela",
         "Virgin Islands, British","Virgin Islands, U.S.","Vietnam","Vanuatu","Wallis and Futuna","Samoa","Yemen","Mayotte","Serbia","South Africa",
-        "Zambia","Montenegro","Zimbabwe","Anonymous Proxy","Satellite Provider","Other","Aland Islands","Guernsey","Isle of Man","Jersey",
-        "Saint Barthelemy","Saint Martin","Bonaire, Saint Eustatius and Saba","South Sudan"};
+        "Zambia","Montenegro","Zimbabwe","Anonymous Proxy","Satellite Provider","Aland Islands","Guernsey","Isle of Man","Jersey",
+        "Saint Barthelemy","Saint Martin","Bonaire, Saint Eustatius and Saba","South Sudan","Other","N/A"};
     }
 }
