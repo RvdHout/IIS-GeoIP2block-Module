@@ -1,5 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="packages\ILMerge.3.0.21\build\ILMerge.props" Condition="Exists('packages\ILMerge.3.0.21\build\ILMerge.props')" />
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -60,17 +61,20 @@
     <CodeAnalysisRuleSet />
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="IPAddressRange, Version=3.2.0.0, Culture=neutral, PublicKeyToken=578e3c3d17e7c751, processorArchitecture=MSIL">
+      <HintPath>packages\IPAddressRange.3.2.0\lib\net45\IPAddressRange.dll</HintPath>
+      <EmbedInteropTypes>False</EmbedInteropTypes>
+    </Reference>
     <Reference Include="Microsoft.CSharp">
       <Private>False</Private>
     </Reference>
     <Reference Include="Microsoft.Web.Administration, Version=7.9.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
-      <HintPath>%windir%\System32\inetsrv\Microsoft.Web.Administration.dll</HintPath>
+      <HintPath>lib\Microsoft.Web.Administration.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Microsoft.Web.Management, Version=7.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>%windir%\System32\inetsrv\Microsoft.Web.Management.dll</HintPath>
+    <Reference Include="Microsoft.Web.Management">
+      <HintPath>lib\Microsoft.Web.Management.dll</HintPath>
       <Private>False</Private>
     </Reference>
     <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
@@ -90,7 +94,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AddExceptionRuleForm.cs" />
+    <Compile Include="AddExceptionRuleForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="AddExceptionRuleForm.Designer.cs">
       <DependentUpon>AddExceptionRuleForm.cs</DependentUpon>
     </Compile>
@@ -146,6 +152,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="IisGeoblockModule.snk" />
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="AddExceptionRuleForm.resx">
@@ -177,6 +184,14 @@
     <Folder Include="MaxMind.GeoIP2\Properties\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <Import Project="packages\ILMerge.MSBuild.Task.1.0.5\build\ILMerge.MSBuild.Task.targets" Condition="Exists('packages\ILMerge.MSBuild.Task.1.0.5\build\ILMerge.MSBuild.Task.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('packages\ILMerge.MSBuild.Task.1.0.5\build\ILMerge.MSBuild.Task.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\ILMerge.MSBuild.Task.1.0.5\build\ILMerge.MSBuild.Task.targets'))" />
+    <Error Condition="!Exists('packages\ILMerge.3.0.21\build\ILMerge.props')" Text="$([System.String]::Format('$(ErrorText)', 'packages\ILMerge.3.0.21\build\ILMerge.props'))" />
+  </Target>
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
