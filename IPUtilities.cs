@@ -86,8 +86,7 @@ namespace IISGeoIP2blockModule
         /// <returns>True if the IP addresses are within the same subnet. False otherwise</returns>
         public static bool IsInSameSubnet(string ipAddress1, string ipAddress2, string subnetMask)
         {
-            var range = IPAddressRange.Parse(ipAddress2 + "/" + subnetMask);
-            return range.Contains(IPAddress.Parse(ipAddress1));
+            return IsInSameSubnet(IPAddress.Parse(ipAddress1), ipAddress2, subnetMask);
         }
 
         /// <summary>
