@@ -182,7 +182,7 @@ namespace IISGeoIP2blockModule
         {
             if (String.IsNullOrEmpty(exceptionRule.Mask) && IPAddress.Parse(exceptionRule.IpAddress).Equals(ipAddress))
                 return true;
-            if (!String.IsNullOrEmpty(exceptionRule.Mask) && IPUtilities.IsInSameSubnet(ipAddress, IPAddress.Parse(exceptionRule.IpAddress), IPAddress.Parse(exceptionRule.Mask)))
+            if (!String.IsNullOrEmpty(exceptionRule.Mask) && IPUtilities.IsInSameSubnet(ipAddress, exceptionRule.IpAddress, exceptionRule.Mask))
                 return true;
             return false;
         }
