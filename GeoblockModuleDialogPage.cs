@@ -49,6 +49,7 @@ namespace IISGeoIP2blockModule
         
         //Interface elements
         private System.Windows.Forms.CheckBox enabledCB;
+        private System.Windows.Forms.CheckBox verifyAllCB;
         private System.Windows.Forms.ComboBox comboBoxDenyAction;
         private System.Windows.Forms.RadioButton allowedRB;
         private System.Windows.Forms.RadioButton deniedRB;
@@ -97,6 +98,7 @@ namespace IISGeoIP2blockModule
         private void Initialize()
         {
             this.enabledCB = new System.Windows.Forms.CheckBox();
+            this.verifyAllCB = new System.Windows.Forms.CheckBox();
             this.allowedRB = new System.Windows.Forms.RadioButton();
             this.deniedRB = new System.Windows.Forms.RadioButton();
             this.geoIpFilepathTB = new System.Windows.Forms.TextBox();
@@ -167,21 +169,27 @@ namespace IISGeoIP2blockModule
             this.geoIpFilepathB.Text = "Select file";
             this.geoIpFilepathB.Click += new System.EventHandler(this.geoIpFilepathB_Click);
 
+            this.verifyAllCB.AutoSize = true;
+            this.verifyAllCB.Left = 5;
+            this.verifyAllCB.Top = 170;
+            this.verifyAllCB.Text = "Verify all IP addresses in HTTP_X_FORWARDED_FOR";
+            this.verifyAllCB.CheckedChanged += new EventHandler(verifyAllCB_CheckedChanged);
+
             this.allowedRB.AutoSize = true;
             this.allowedRB.Checked = true;
             this.allowedRB.Left = 5;
-            this.allowedRB.Top = 171;
+            this.allowedRB.Top = 194;
             this.allowedRB.Text = "Allow access for";
             this.allowedRB.CheckedChanged += new EventHandler(allowedRB_CheckedChanged);
             
             this.deniedRB.AutoSize = true;
             this.deniedRB.Left = 5;
-            this.deniedRB.Top = 194;
+            this.deniedRB.Top = 214;
             this.deniedRB.Text = "Deny access for";
             this.deniedRB.CheckedChanged += new EventHandler(deniedRB_CheckedChanged);
 
             this.selectedCountryCodesLB.Left = 5;
-            this.selectedCountryCodesLB.Top = 217;
+            this.selectedCountryCodesLB.Top = 237;
             this.selectedCountryCodesLB.Width = 279;
             this.selectedCountryCodesLB.Height = 184;
             this.selectedCountryCodesLB.CheckOnClick = true;
@@ -253,6 +261,7 @@ namespace IISGeoIP2blockModule
             this.removeEntryM.Click += new System.EventHandler(this.RemoveEntry_Click);
 
             Controls.Add(enabledCB);
+            Controls.Add(verifyAllCB);
             Controls.Add(comboBoxDenyAction);
             Controls.Add(allowedRB);
             Controls.Add(deniedRB);
@@ -346,6 +355,7 @@ namespace IISGeoIP2blockModule
         void DisplayConfiguration()
         {
             enabledCB.Checked = this.moduleConfiguration.Enabled;
+            verifyAllCB.Checked = this.moduleConfiguration.VerifyAll;
             for (int i = 0; i < comboBoxDenyAction.Items.Count; i++)
             {
                 ComboboxItem ci = (ComboboxItem)comboBoxDenyAction.Items[i];
@@ -406,6 +416,7 @@ namespace IISGeoIP2blockModule
         protected override bool ApplyChanges()
         {
             this.moduleConfiguration.Enabled = enabledCB.Checked;
+            this.moduleConfiguration.VerifyAll = verifyAllCB.Checked;
             this.moduleConfiguration.DenyAction = (comboBoxDenyAction.SelectedItem as ComboboxItem).Value.ToString();
             this.moduleConfiguration.AllowedMode = allowedRB.Checked;
             this.moduleConfiguration.GeoIpFilepath = geoIpFilepathTB.Text;
@@ -598,6 +609,11 @@ namespace IISGeoIP2blockModule
         }
 
         private void enabledCB_CheckedChanged(object sender, EventArgs e)
+        {
+            ConfigChanged();
+        }
+
+        private void verifyAllCB_CheckedChanged(object sender, EventArgs e)
         {
             ConfigChanged();
         }

@@ -39,7 +39,9 @@ namespace IISGeoIP2blockModule
             result.Add(0, config.Enabled);
             result.Add(1, config.DenyAction);
             result.Add(2, config.GeoIpFilepath);
-            result.Add(3, config.AllowedMode);
+            result.Add(3, config.VerifyAll);
+            result.Add(4, config.AllowedMode);
+
 
             ArrayList countries = new ArrayList();
             foreach (CountryConfigurationElement country in config.SelectedCountryCodes)
@@ -48,7 +50,7 @@ namespace IISGeoIP2blockModule
                 item.Add(0, country.Code);
                 countries.Add(item);
             }
-            result.Add(4, countries);
+            result.Add(5, countries);
 
             ArrayList exceptionRules = new ArrayList();
             foreach (ExceptionRuleConfigurationElement exceptionRule in config.ExceptionRules)
@@ -59,7 +61,7 @@ namespace IISGeoIP2blockModule
                 item.Add(2, exceptionRule.Mask);
                 exceptionRules.Add(item);
             }
-            result.Add(5, exceptionRules);
+            result.Add(6, exceptionRules);
 
             return result;
         }
@@ -81,15 +83,16 @@ namespace IISGeoIP2blockModule
             config.Enabled = (bool)updatedGeoblockConfiguration[0];
             config.DenyAction = (string)updatedGeoblockConfiguration[1];
             config.GeoIpFilepath = (string)updatedGeoblockConfiguration[2];
-            config.AllowedMode = (bool)updatedGeoblockConfiguration[3];
+            config.VerifyAll = (bool)updatedGeoblockConfiguration[3];
+            config.AllowedMode = (bool)updatedGeoblockConfiguration[4];
             config.SelectedCountryCodes.Clear();
-            ArrayList countries = (ArrayList)updatedGeoblockConfiguration[4];
+            ArrayList countries = (ArrayList)updatedGeoblockConfiguration[5];
             foreach (PropertyBag item in countries)
             {
                 config.SelectedCountryCodes.Add((string)item[0]);
             }
             config.ExceptionRules.Clear();
-            ArrayList exceptionRules = (ArrayList)updatedGeoblockConfiguration[5];
+            ArrayList exceptionRules = (ArrayList)updatedGeoblockConfiguration[6];
             foreach (PropertyBag item in exceptionRules)
             {
                 config.ExceptionRules.Add((bool)item[0], (string)item[1], (string)item[2]);
