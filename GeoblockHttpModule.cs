@@ -18,6 +18,10 @@ using System;
 using System.Collections.Generic;
 using System.Web;
 using Microsoft.Web.Administration;
+using System.Diagnostics;
+using System.Net;
+using System.Reflection;
+using System.Collections;
 
 namespace IISGeoIP2blockModule
 {
@@ -26,6 +30,19 @@ namespace IISGeoIP2blockModule
     /// </summary>
     public class GeoblockHttpModule : IHttpModule
     {
+#if DEBUG
+        private readonly static string _my_name;
+
+        static GeoblockHttpModule()
+        {
+            GeoblockHttpModule._my_name = Assembly.GetExecutingAssembly().GetName().Name.ToString();
+        }
+#endif
+
+        public GeoblockHttpModule()
+        {
+        }
+
         /// <summary>
         /// Attaches itself to the BeginRequest event of the IIS flow
         /// </summary>
@@ -34,6 +51,26 @@ namespace IISGeoIP2blockModule
         {
             context.BeginRequest += new EventHandler(context_BeginRequest);
         }
+
+#if DEBUG
+        private void DbgWrite(string format, params object[] args)
+        {
+            try
+            {
+                string str = string.Format(format, args);
+                Trace.WriteLine(string.Format("[{0}]: {1}", GeoblockHttpModule._my_name, str));
+            }
+            catch (Exception exception)
+            {
+                Trace.WriteLine(string.Format("DbgWrite::Error: {0}", exception.Message));
+            }
+        }
+
+        private static string ConvertStringArrayToStringJoin(string[] array)
+        {
+            return string.Join(",", array);
+        }
+#endif
 
         /// <summary>
         /// Handles the begin request event. this is the place where the actual check is performed
@@ -47,14 +84,14 @@ namespace IISGeoIP2blockModule
 
             //Get module config
             GeoblockConfigurationSection moduleConfiguration = (GeoblockConfigurationSection)WebConfigurationManager.GetSection(context, GeoblockConfigurationSection.SectionName, typeof(GeoblockConfigurationSection));
-            
+
             if (!moduleConfiguration.Enabled)
                 return;
 
             //Get the ip's of the request. All the IP's must be checked
             List<System.Net.IPAddress> ipAddressesToCheck = new List<System.Net.IPAddress>();
             string ipNotificationString = string.Empty;
-            try 
+            try
             {
                 string ip = context.Request.UserHostAddress;
                 ipNotificationString += "Request IP: [" + ip + "]";
@@ -70,8 +107,9 @@ namespace IISGeoIP2blockModule
                 ipNotificationString += " Forwarded IP's: [" + forwardedIps + "]";
                 //The HTTP_X_FORWARDED_FOR value can contain more then one entry (, seperated)
                 string[] ips = forwardedIps.Split(",".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
-                foreach(string ip in ips){
-                    try 
+                foreach (string ip in ips)
+                {
+                    try
                     {
                         System.Net.IPAddress ipAddress = System.Net.IPAddress.Parse(ip.Trim());
                         ipAddressesToCheck.Add(ipAddress);
@@ -79,7 +117,16 @@ namespace IISGeoIP2blockModule
                     catch { }
                 }
             }
-            
+#if DEBUG
+            ArrayList ipToCheck = new ArrayList();
+            foreach (IPAddress ipAddress in ipAddressesToCheck)
+            {
+                ipToCheck.Add(ipAddress.ToString());
+            }
+            this.DbgWrite(string.Format("ipAddressesToCheck: {0}{1}", GeoblockHttpModule.ConvertStringArrayToStringJoin((string[])ipToCheck.ToArray(typeof(string))), Environment.NewLine));
+#endif
+
+
             string[] selectedCountryCodes = new string[moduleConfiguration.SelectedCountryCodes.Count];
             int i = 0;
             foreach (CountryConfigurationElement country in moduleConfiguration.SelectedCountryCodes)
@@ -87,39 +134,49 @@ namespace IISGeoIP2blockModule
                 selectedCountryCodes[i] = country.Code;
                 i++;
             }
+#if DEBUG
+            this.DbgWrite(string.Format("CountryCodes: {0}{1}", GeoblockHttpModule.ConvertStringArrayToStringJoin(selectedCountryCodes), Environment.NewLine));
+#endif
             ExceptionRule[] exceptionRules = new ExceptionRule[moduleConfiguration.ExceptionRules.Count];
             i = 0;
             foreach (ExceptionRuleConfigurationElement exceptionRule in moduleConfiguration.ExceptionRules)
             {
                 exceptionRules[i] = new ExceptionRule(exceptionRule.AllowedMode, exceptionRule.IpAddress, exceptionRule.Mask);
+#if DEBUG
+                this.DbgWrite(string.Format("exceptionRule: AllowedMode: {0}, IP: {1}{2}", exceptionRule.AllowedMode, exceptionRule.IpAddress, Environment.NewLine));
+#endif
                 i++;
             }
 
             //Perform the check
             string resultMessage;
-            Geoblocker geoBlocker = new Geoblocker(moduleConfiguration.GeoIpFilepath, selectedCountryCodes, moduleConfiguration.AllowedMode, exceptionRules);
+            Geoblocker geoBlocker = new Geoblocker(moduleConfiguration.GeoIpFilepath, selectedCountryCodes, moduleConfiguration.AllowedMode, exceptionRules, moduleConfiguration.VerifyAll);
             if (!geoBlocker.Allowed(ipAddressesToCheck, out resultMessage))
             {
+#if DEBUG
+                this.DbgWrite(string.Concat("IP is blocked by GeoIP2block Module. ", ipNotificationString, ". ", resultMessage));
+                this.DbgWrite(string.Format("DenyAction: {0} ", moduleConfiguration.DenyAction));
+#endif
                 switch (moduleConfiguration.DenyAction)
                 {
                     case "Unauthorized":
                         context.Response.StatusCode = 401;
                         context.Response.SubStatusCode = 503;
-                        context.Response.StatusDescription = "IP is blocked by GeoIP2block Module. " + ipNotificationString + ". " + resultMessage;
+                        context.Response.StatusDescription = string.Concat("IP is blocked by GeoIP2block Module. ", ipNotificationString, ". ", resultMessage);
                         context.Response.SuppressContent = true;
                         context.Response.End();
                         break;
                     case "Forbidden":
                         context.Response.StatusCode = 403;
                         context.Response.SubStatusCode = 503;
-                        context.Response.StatusDescription = "IP is blocked by GeoIP2block Module. " + ipNotificationString + ". " + resultMessage;
+                        context.Response.StatusDescription = string.Concat("IP is blocked by GeoIP2block Module. ", ipNotificationString, ". ", resultMessage);
                         context.Response.SuppressContent = true;
                         context.Response.End();
                         break;
                     case "NotFound":
                         context.Response.StatusCode = 404;
                         context.Response.SubStatusCode = 503;
-                        context.Response.StatusDescription = "IP is blocked by GeoIP2block Module. " + ipNotificationString + ". " + resultMessage;
+                        context.Response.StatusDescription = string.Concat("IP is blocked by GeoIP2block Module. ", ipNotificationString, ". ", resultMessage);
                         context.Response.SuppressContent = true;
                         context.Response.End();
                         break;
@@ -128,8 +185,12 @@ namespace IISGeoIP2blockModule
                         break;
                 }
             }
+#if DEBUG
+            else
+            this.DbgWrite(string.Format("DenyAction: {0} ", resultMessage));
+#endif
         }
-        
+
         /// <summary>
         /// Needed for IHttpmodule interface
         /// </summary>

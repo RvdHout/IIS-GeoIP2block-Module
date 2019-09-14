@@ -18,7 +18,6 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Threading;
-/* using MaxMind.GeoIP2; */
 
 namespace IISGeoIP2blockModule
 {
@@ -51,17 +50,24 @@ namespace IISGeoIP2blockModule
         private ExceptionRule[] exceptionRules;
 
         /// <summary>
+        /// Indicates whether or not if any proxy in HTTP_X_FORWARDED_FOR should be ignored if previous checked ip matches
+        /// </summary>
+        private bool verifyAll;
+
+        /// <summary>
         /// Creates a new Geoblocker instance
         /// </summary>
         /// <param name="geoIpFilepath">The path to the geo ip data file</param>
         /// <param name="selectedCountryCodes">The countrycodes to look for</param>
         /// <param name="allowedMode">Whether the selected country codes are allowed or denied access</param>
-        public Geoblocker(string geoIpFilepath, string[] selectedCountryCodes, bool allowedMode, ExceptionRule[] exceptionRules)
+        /// <param name="verifyAll">Indicates whether or not if any proxy in HTTP_X_FORWARDED_FOR should be ignored if previous checked ip matches</param>
+        public Geoblocker(string geoIpFilepath, string[] selectedCountryCodes, bool allowedMode, ExceptionRule[] exceptionRules, bool verifyAll)
         {
             this.geoIpFilepath = geoIpFilepath;
             this.selectedCountryCodes = selectedCountryCodes;
             this.allowedMode = allowedMode;
             this.exceptionRules = exceptionRules;
+            this.verifyAll = verifyAll;
         }
 
         /// <summary>
@@ -116,9 +122,14 @@ namespace IISGeoIP2blockModule
                     if (matchedOnExceptionRule)
                     {
                         if (allowedByExceptionRule)
+                        {
                             //IP found that matches an allow exception rule, don't check the country
-                            //We continue, because another IP could be denied
-                            continue;
+                            //We continue if verifyAll is specified, because another IP could be denied
+                            if (verifyAll)
+                                continue;
+                            else
+                                break;
+                        }
                         else
                         {
                             //IP found that matches a deny exception rule, deny access immediately
@@ -153,9 +164,15 @@ namespace IISGeoIP2blockModule
                         resultMessage = "Blocked IP: [" + ipAddress.ToString() + "] from [" + countryCode + "]";
                         return false;
                     }
+                    else
+                    {
+                        // If a proxy in HTTP_X_FORWARDED_FOR should be ignored if previous checked ip matches previous found country or exceptionRule                      
+                        if (!verifyAll)
+                            break;
+                    }
                 }
             }
-            resultMessage = "IP(s) allowed";
+            resultMessage = "None";
             return true;
         }
 
@@ -182,7 +199,7 @@ namespace IISGeoIP2blockModule
         {
             if (String.IsNullOrEmpty(exceptionRule.Mask) && IPAddress.Parse(exceptionRule.IpAddress).Equals(ipAddress))
                 return true;
-            if (!String.IsNullOrEmpty(exceptionRule.Mask) && IPUtilities.IsInSameSubnet(ipAddress, IPAddress.Parse(exceptionRule.IpAddress), IPAddress.Parse(exceptionRule.Mask)))
+            if (!String.IsNullOrEmpty(exceptionRule.Mask) && IPUtilities.IsInSameSubnet(ipAddress, exceptionRule.IpAddress, exceptionRule.Mask))
                 return true;
             return false;
         }

@@ -73,9 +73,8 @@
       <HintPath>%windir%\System32\inetsrv\Microsoft.Web.Management.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=6.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>bin\Release\Newtonsoft.Json.dll</HintPath>
+    <Reference Include="Newtonsoft.Json, Version=4.5.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>packages\Newtonsoft.Json.5.0.6\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core">
@@ -90,7 +89,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="AddExceptionRuleForm.cs" />
+    <Compile Include="AddExceptionRuleForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
     <Compile Include="AddExceptionRuleForm.Designer.cs">
       <DependentUpon>AddExceptionRuleForm.cs</DependentUpon>
     </Compile>
@@ -105,6 +106,8 @@
     <Compile Include="AddExceptionRuleTaskList.cs" />
     <Compile Include="GeoblockModuleService.cs" />
     <Compile Include="GeoblockModuleServiceProxy .cs" />
+    <Compile Include="IPAddressRange\Bits.cs" />
+    <Compile Include="IPAddressRange\IPAddressRange.cs" />
     <Compile Include="IPUtilities.cs" />
     <Compile Include="MaxMind.Db\ArrayBuffer.cs" />
     <Compile Include="MaxMind.Db\Buffer.cs" />
@@ -146,6 +149,7 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="IisGeoblockModule.snk" />
+    <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="AddExceptionRuleForm.resx">

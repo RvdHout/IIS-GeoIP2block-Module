@@ -25,7 +25,7 @@ namespace IISGeoIP2blockModule
     public class ComboboxItem
     {
         public string Text { get; set; }
-        public object Value { get; set; }
+        public string Value { get; set; }
 
         public override string ToString()
         {
@@ -348,8 +348,12 @@ namespace IISGeoIP2blockModule
             enabledCB.Checked = this.moduleConfiguration.Enabled;
             for (int i = 0; i < comboBoxDenyAction.Items.Count; i++)
             {
-                if (comboBoxDenyAction.Items[i].ToString() == this.moduleConfiguration.DenyAction)
-                    comboBoxDenyAction.SelectedItem = comboBoxDenyAction.Items[i];
+                ComboboxItem ci = (ComboboxItem)comboBoxDenyAction.Items[i];
+                if (ci != null && ci.Value.ToString() == this.moduleConfiguration.DenyAction)
+                {
+                    comboBoxDenyAction.SelectedIndex = i;
+                    break;
+                }
             }
             if (this.moduleConfiguration.AllowedMode)
                 allowedRB.Checked = true;

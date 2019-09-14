@@ -4,6 +4,7 @@
 		<attribute name="DenyAction" type="string" defaultValue="Unauthorized" />
 		<attribute name="geoIpFilepath" type="string" defaultValue="" />
 		<attribute name="allowedMode" type="bool" defaultValue="true" />
+		<attribute name="verifyAll" type="bool" defaultValue="true" />
 		<element name="selectedCountryCodes">
 			<collection addElement="add" removeElement="remove" clearElement="clear">
 				<attribute name="code" type="string" defaultValue="--" />			

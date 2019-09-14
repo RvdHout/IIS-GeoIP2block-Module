@@ -47,6 +47,15 @@ namespace IISGeoIP2blockModule
         }
 
         /// <summary>
+        ///  Specifies whether or not if a proxy in HTTP_X_FORWARDED_FOR should be ignored if previous checked ip matches
+        /// </summary>
+        public bool VerifyAll
+        {
+            get { return (bool)base["verifyAll"]; }
+            set { base["verifyAll"] = (bool)value; }
+        }
+
+        /// <summary>
         /// Specifies the Deny Action Type
         /// </summary>
         public string DenyAction
