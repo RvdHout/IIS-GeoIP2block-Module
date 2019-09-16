@@ -22,6 +22,7 @@ using System.Diagnostics;
 using System.Net;
 using System.Reflection;
 using System.Collections;
+using System.Linq;
 
 namespace IISGeoIP2blockModule
 {
@@ -117,16 +118,16 @@ namespace IISGeoIP2blockModule
                     catch { }
                 }
             }
+            // Make new unique list
+            List<System.Net.IPAddress> ipAddressesToCheckUnique = ipAddressesToCheck.Distinct().ToList();
 #if DEBUG
             ArrayList ipToCheck = new ArrayList();
-            foreach (IPAddress ipAddress in ipAddressesToCheck)
+            foreach (IPAddress ipAddress in ipAddressesToCheckUnique)
             {
                 ipToCheck.Add(ipAddress.ToString());
             }
             this.DbgWrite(string.Format("ipAddressesToCheck: {0}{1}", GeoblockHttpModule.ConvertStringArrayToStringJoin((string[])ipToCheck.ToArray(typeof(string))), Environment.NewLine));
 #endif
-
-
             string[] selectedCountryCodes = new string[moduleConfiguration.SelectedCountryCodes.Count];
             int i = 0;
             foreach (CountryConfigurationElement country in moduleConfiguration.SelectedCountryCodes)
@@ -151,7 +152,7 @@ namespace IISGeoIP2blockModule
             //Perform the check
             string resultMessage;
             Geoblocker geoBlocker = new Geoblocker(moduleConfiguration.GeoIpFilepath, selectedCountryCodes, moduleConfiguration.AllowedMode, exceptionRules, moduleConfiguration.VerifyAll);
-            if (!geoBlocker.Allowed(ipAddressesToCheck, out resultMessage))
+            if (!geoBlocker.Allowed(ipAddressesToCheckUnique, out resultMessage))
             {
 #if DEBUG
                 this.DbgWrite(string.Concat("IP is blocked by GeoIP2block Module. ", ipNotificationString, ". ", resultMessage));
