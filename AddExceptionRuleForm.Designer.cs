@@ -117,7 +117,7 @@
             this.LMask.Name = "LMask";
             this.LMask.Size = new System.Drawing.Size(36, 13);
             this.LMask.TabIndex = 7;
-            this.LMask.Text = "Mask:";
+            this.LMask.Text = "IPv4 subnet mask:";
             // 
             // TBMask
             // 

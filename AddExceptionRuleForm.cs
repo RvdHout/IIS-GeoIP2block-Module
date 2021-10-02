@@ -18,6 +18,7 @@ using System;
 using System.ComponentModel;
 using System.Net;
 using System.Windows.Forms;
+using NetTools;
 
 namespace IISGeoIP2blockModule
 {
@@ -135,6 +136,18 @@ namespace IISGeoIP2blockModule
                     MessageBox.Show(this, "'" + TBMask.Text + "' is an invalid subnet mask.", this.Text, MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
                     return;
                 }
+
+                try
+                {
+                    var cidr = IPAddressRange.Parse(TBAddressRange.Text + "/" + TBMask.Text).ToCidrString();
+                }
+                catch 
+                {
+                    MessageBox.Show(this, "'" + TBMask.Text + "' is an invalid subnet mask.", this.Text, MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+                    return;
+                }
+
+
                 //We will check against existing exception rules if there is a conflict or overlap
                 ExceptionRule newRule = new ExceptionRule(this.AllowMode, range.ToString(), mask.ToString());
                 if (CheckNewRule(newRule))

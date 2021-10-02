@@ -95,6 +95,9 @@ namespace IISGeoIP2blockModule
             try
             {
                 string ip = context.Request.UserHostAddress;
+#if DEBUG
+                this.DbgWrite(string.Format("REMOTE_ADDR: {0}", ip));
+#endif
                 ipNotificationString += "Request IP: [" + ip + "]";
                 System.Net.IPAddress ipAddress = System.Net.IPAddress.Parse(ip.Trim());
                 ipAddressesToCheck.Add(ipAddress);
@@ -103,16 +106,24 @@ namespace IISGeoIP2blockModule
 
             //Could be behind proxy, so check forwarded IP's
             string forwardedIps = context.Request.ServerVariables["HTTP_X_FORWARDED_FOR"];
+#if DEBUG
+            this.DbgWrite(string.Format("HTTP_X_FORWARDED_FOR: {0}", forwardedIps));
+#endif
             if (!String.IsNullOrEmpty(forwardedIps))
             {
                 ipNotificationString += " Forwarded IP's: [" + forwardedIps + "]";
                 //The HTTP_X_FORWARDED_FOR value can contain more then one entry (, seperated)
-                string[] ips = forwardedIps.Split(",".ToCharArray(), StringSplitOptions.RemoveEmptyEntries);
+                string[] ips = forwardedIps.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
                 foreach (string ip in ips)
                 {
                     try
                     {
-                        System.Net.IPAddress ipAddress = System.Net.IPAddress.Parse(ip.Trim());
+                        System.Net.IPAddress ipAddress;
+                        // Forwarded IP's in Application Request Routing might contain port
+                        if (ip.Contains(":"))
+                            ipAddress = System.Net.IPAddress.Parse(ip.Split(new char[] { ':' }, StringSplitOptions.RemoveEmptyEntries)[0].Trim());
+                        else
+                            ipAddress = System.Net.IPAddress.Parse(ip.Trim());
                         ipAddressesToCheck.Add(ipAddress);
                     }
                     catch { }
@@ -126,7 +137,7 @@ namespace IISGeoIP2blockModule
             {
                 ipToCheck.Add(ipAddress.ToString());
             }
-            this.DbgWrite(string.Format("ipAddressesToCheck: {0}{1}", GeoblockHttpModule.ConvertStringArrayToStringJoin((string[])ipToCheck.ToArray(typeof(string))), Environment.NewLine));
+            this.DbgWrite(string.Format("Requestor IP address('s): {0}{1}", GeoblockHttpModule.ConvertStringArrayToStringJoin((string[])ipToCheck.ToArray(typeof(string))), Environment.NewLine));
 #endif
             string[] selectedCountryCodes = new string[moduleConfiguration.SelectedCountryCodes.Count];
             int i = 0;
@@ -136,7 +147,7 @@ namespace IISGeoIP2blockModule
                 i++;
             }
 #if DEBUG
-            this.DbgWrite(string.Format("CountryCodes: {0}{1}", GeoblockHttpModule.ConvertStringArrayToStringJoin(selectedCountryCodes), Environment.NewLine));
+            this.DbgWrite(string.Format("CountryCodes: {0} AllowedMode: {1}{2}", GeoblockHttpModule.ConvertStringArrayToStringJoin(selectedCountryCodes), moduleConfiguration.AllowedMode, Environment.NewLine));
 #endif
             ExceptionRule[] exceptionRules = new ExceptionRule[moduleConfiguration.ExceptionRules.Count];
             i = 0;
@@ -144,7 +155,10 @@ namespace IISGeoIP2blockModule
             {
                 exceptionRules[i] = new ExceptionRule(exceptionRule.AllowedMode, exceptionRule.IpAddress, exceptionRule.Mask);
 #if DEBUG
-                this.DbgWrite(string.Format("exceptionRule: AllowedMode: {0}, IP: {1}{2}", exceptionRule.AllowedMode, exceptionRule.IpAddress, Environment.NewLine));
+                if (!string.IsNullOrEmpty(exceptionRule.Mask))
+                    this.DbgWrite(string.Format("exceptionRule: AllowedMode: {0}, Requestor: {1} ({2}){3}", exceptionRule.AllowedMode, exceptionRule.IpAddress, exceptionRule.Mask, Environment.NewLine));
+                else
+                    this.DbgWrite(string.Format("exceptionRule: AllowedMode: {0}, Requestor: {1}{2}", exceptionRule.AllowedMode, exceptionRule.IpAddress, Environment.NewLine));
 #endif
                 i++;
             }
