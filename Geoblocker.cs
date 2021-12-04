@@ -141,12 +141,21 @@ namespace IISGeoIP2blockModule
                     if (reader.Metadata.DatabaseType.ToLower().IndexOf("country") == -1)
                         throw new System.InvalidOperationException("This is not a GeoLite2-Country or GeoIP2-Country database");
 
+                    string countryCode = string.Empty;
                     //not found in exception rule, so base access rights on the country
-                    MaxMind.GeoIP2.Responses.CountryResponse countryResponse = reader.Country(ipAddress);
-                    string countryCode = !string.IsNullOrEmpty(countryResponse.Country.IsoCode) ? countryResponse.Country.IsoCode : !string.IsNullOrEmpty(countryResponse.RegisteredCountry.IsoCode) ? countryResponse.RegisteredCountry.IsoCode : string.Empty;
-
-                    if (string.IsNullOrEmpty(countryCode))
-                        countryCode = "--";
+                    try
+                    {
+                        MaxMind.GeoIP2.Responses.CountryResponse countryResponse = reader.Country(ipAddress);
+                        countryCode = !string.IsNullOrEmpty(countryResponse.Country.IsoCode) ? countryResponse.Country.IsoCode : !string.IsNullOrEmpty(countryResponse.RegisteredCountry.IsoCode) ? countryResponse.RegisteredCountry.IsoCode : string.Empty;
+                    }
+                    catch (MaxMind.GeoIP2.Exceptions.AddressNotFoundException) { }
+                    catch (MaxMind.GeoIP2.Exceptions.PermissionRequiredException) { }
+                    catch (MaxMind.GeoIP2.Exceptions.GeoIP2Exception) { }
+                    finally
+                    {
+                        if (string.IsNullOrEmpty(countryCode))
+                            countryCode = "--";
+                    }
 
                     bool selected = CountryCodeSelected(countryCode);
                     bool allowed = (selected == allowedMode);
