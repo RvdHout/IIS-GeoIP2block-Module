@@ -415,7 +415,7 @@ namespace IISGeoIP2blockModule
         /// </summary>
         protected override bool ApplyChanges()
         {
-            this.moduleConfiguration.Enabled = enabledCB.Checked;
+            this.moduleConfiguration.Enabled = !string.IsNullOrEmpty(geoIpFilepathTB.Text.Trim()) && System.IO.File.Exists(geoIpFilepathTB.Text.Trim()) ? enabledCB.Checked : false;
             this.moduleConfiguration.VerifyAll = verifyAllCB.Checked;
             this.moduleConfiguration.DenyAction = (comboBoxDenyAction.SelectedItem as ComboboxItem).Value.ToString();
             this.moduleConfiguration.AllowedMode = allowedRB.Checked;
