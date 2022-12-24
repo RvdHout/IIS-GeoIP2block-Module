@@ -10,7 +10,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>IISGeoIP2blockModule</RootNamespace>
     <AssemblyName>IISGeoIP2blockModule</AssemblyName>
-    <TargetFrameworkVersion>v4.6</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <SignAssembly>true</SignAssembly>
     <AssemblyOriginatorKeyFile>IisGeoblockModule.snk</AssemblyOriginatorKeyFile>
@@ -37,6 +37,8 @@
     <BootstrapperEnabled>true</BootstrapperEnabled>
     <NuGetPackageImportStamp>
     </NuGetPackageImportStamp>
+    <LangVersion>8.0</LangVersion>
+    <Nullable>enable</Nullable>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>true</DebugSymbols>
@@ -73,12 +75,12 @@
       <HintPath>%windir%\System32\inetsrv\Microsoft.Web.Management.dll</HintPath>
       <Private>False</Private>
     </Reference>
-    <Reference Include="Newtonsoft.Json, Version=4.5.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>packages\Newtonsoft.Json.5.0.6\lib\net45\Newtonsoft.Json.dll</HintPath>
+    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>packages\Newtonsoft.Json.13.0.1\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core">
-      <RequiredTargetFramework>3.5</RequiredTargetFramework>
+      <RequiredTargetFramework>4.8</RequiredTargetFramework>
     </Reference>
     <Reference Include="System.Data" />
     <Reference Include="System.Drawing" />
@@ -107,6 +109,11 @@
     <Compile Include="GeoblockModuleService.cs" />
     <Compile Include="GeoblockModuleServiceProxy .cs" />
     <Compile Include="IPAddressRange\Bits.cs" />
+    <Compile Include="IPAddressRange\Internals\IPAddressExtensions.cs" />
+    <Compile Include="IPAddressRange\Internals\IPv4RangeOperator.cs" />
+    <Compile Include="IPAddressRange\Internals\IPv6RangeOperator.cs" />
+    <Compile Include="IPAddressRange\Internals\IRangeOperator.cs" />
+    <Compile Include="IPAddressRange\Internals\RangeOperatorFactory.cs" />
     <Compile Include="IPAddressRange\IPAddressRange.cs" />
     <Compile Include="IPUtilities.cs" />
     <Compile Include="MaxMind.Db\ArrayBuffer.cs" />
@@ -124,6 +131,8 @@
     <Compile Include="MaxMind.Db\ListActivatorCreator.cs" />
     <Compile Include="MaxMind.Db\MemoryMapBuffer.cs" />
     <Compile Include="MaxMind.Db\Metadata.cs" />
+    <Compile Include="MaxMind.Db\Network.cs" />
+    <Compile Include="MaxMind.Db\NetworkAttribute.cs" />
     <Compile Include="MaxMind.Db\ParameterAttribute.cs" />
     <Compile Include="MaxMind.Db\Reader.cs" />
     <Compile Include="MaxMind.Db\ReflectionUtil.cs" />
@@ -138,8 +147,6 @@
     <Compile Include="MaxMind.GeoIP2\Model\Country.cs" />
     <Compile Include="MaxMind.GeoIP2\Model\MaxMind.cs" />
     <Compile Include="MaxMind.GeoIP2\Model\NamedEntity.cs" />
-    <Compile Include="MaxMind.GeoIP2\Model\RepresentedCountry.cs" />
-    <Compile Include="MaxMind.GeoIP2\Model\Traits.cs" />
     <Compile Include="MaxMind.GeoIP2\Responses\AbstractCountryResponse.cs" />
     <Compile Include="MaxMind.GeoIP2\Responses\AbstractResponse.cs" />
     <Compile Include="MaxMind.GeoIP2\Responses\CountryResponse.cs" />
@@ -168,13 +175,6 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="resources\remove.png" />
-  </ItemGroup>
-  <ItemGroup>
-    <BootstrapperPackage Include="Microsoft.Net.Framework.3.5.SP1">
-      <Visible>False</Visible>
-      <ProductName>.NET Framework 3.5 SP1</ProductName>
-      <Install>true</Install>
-    </BootstrapperPackage>
   </ItemGroup>
   <ItemGroup>
     <Folder Include="MaxMind.Db\Properties\" />

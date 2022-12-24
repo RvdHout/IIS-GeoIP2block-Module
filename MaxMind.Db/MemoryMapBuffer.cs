@@ -26,14 +26,14 @@ namespace MaxMind.Db
             // easily available from C#.
             var objectNamespace = useGlobalNamespace ? "Global" : "Local";
 
-            var mapName = $"{objectNamespace}\\{fileInfo.FullName.Replace("\\", "-")}-{Length}";
+            string? mapName = $"{objectNamespace}\\{fileInfo.FullName.Replace("\\", "-")}-{Length}";
             lock (FileLocker)
             {
                 try
                 {
                     _memoryMappedFile = MemoryMappedFile.OpenExisting(mapName, MemoryMappedFileRights.Read);
                 }
-#if !NETSTANDARD1_4 && !NETSTANDARD2_0
+#if !NETSTANDARD1_4 && !NETSTANDARD2_0 && !NETSTANDARD2_1
                 catch (Exception ex) when (ex is IOException || ex is NotImplementedException)
 #else           // Note that PNSE is only required by .NetStandard1.0, see the subsequent comment for more context
                 catch (Exception ex) when (ex is IOException || ex is NotImplementedException || ex is PlatformNotSupportedException)
@@ -41,7 +41,7 @@ namespace MaxMind.Db
                 {
                     var stream = new FileStream(file, FileMode.Open, FileAccess.Read,
                                                 FileShare.Delete | FileShare.Read);
-#if !NETSTANDARD1_4 && !NETSTANDARD2_0
+#if !NETSTANDARD1_4 && !NETSTANDARD2_0 && !NETSTANDARD2_1
                     var security = new MemoryMappedFileSecurity();
                     security.AddAccessRule(
                         new System.Security.AccessControl.AccessRule<MemoryMappedFileRights>(
@@ -62,8 +62,8 @@ namespace MaxMind.Db
                     // In NetStandard1.0 (docs: http://bit.ly/1TOKXEw) and since .Net46 (https://msdn.microsoft.com/en-us/library/dn804422.aspx)
                     // CreateFromFile has a new overload with six arguments (modulo MemoryMappedFileSecurity). While the one with seven arguments
                     // is still available in .Net46, that has been removed from netstandard1.0.
-                     _memoryMappedFile = MemoryMappedFile.CreateFromFile(stream, mapName, Length,
-                             MemoryMappedFileAccess.Read, HandleInheritability.None, false);
+                    _memoryMappedFile = MemoryMappedFile.CreateFromFile(stream, mapName, Length,
+                            MemoryMappedFileAccess.Read, HandleInheritability.None, false);
 #endif
                 }
             }

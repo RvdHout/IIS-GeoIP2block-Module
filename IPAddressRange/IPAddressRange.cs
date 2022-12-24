@@ -1,12 +1,14 @@
-﻿using System;
+﻿#nullable disable
+using System;
 using System.Linq;
 using System.Collections;
 using System.Collections.Generic;
 using System.Net;
 using System.Text.RegularExpressions;
 using System.ComponentModel;
+using NetTools.Internals;
 
-#if NET45
+#if NETFRAMEWORK
 using System.Runtime.Serialization;
 #endif
 
@@ -54,29 +56,51 @@ namespace NetTools
     // It cause ambiguous syntax error.
     // To avoid this error, you should use "AsEnumerable()" method before IEnumerable<IPAddressRange> access.
 
-#if NET45
+#if NETFRAMEWORK
     [Serializable]
     public class IPAddressRange : ISerializable, IEnumerable<IPAddress>, IReadOnlyDictionary<string, string>, IEquatable<IPAddressRange>
 #else
-    public sealed class IPAddressRange : IEnumerable<IPAddress>, IReadOnlyDictionary<string, string>, IEquatable<IPAddressRange>
+    public class IPAddressRange : IEnumerable<IPAddress>, IReadOnlyDictionary<string, string>, IEquatable<IPAddressRange>
 #endif
     {
+        // constant that meaning prefix length hasn't computed yet
+        private const int EMPTYPREFIXLENGTH = -1;
+        
         // Pattern 1. CIDR range: "192.168.0.0/24", "fe80::%lo0/10"
-        private static Regex m1_regex = new Regex(@"^(?<adr>([\d.]+)|([\da-f:]+(:[\d.]+)?(%\w+)?))[ \t]*/[ \t]*(?<maskLen>\d+)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex m1_regex = new Regex(@"^(?<adr>([\d.]+)|([\da-f:]+(:[\d.]+)?(%\w+)?))[ \t]*/[ \t]*(?<maskLen>\d+)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         // Pattern 2. Uni address: "127.0.0.1", "::1%eth0"
-        private static Regex m2_regex = new Regex(@"^(?<adr>([\d.]+)|([\da-f:]+(:[\d.]+)?(%\w+)?))$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex m2_regex = new Regex(@"^(?<adr>([\d.]+)|([\da-f:]+(:[\d.]+)?(%\w+)?))$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         // Pattern 3. Begin end range: "169.254.0.0-169.254.0.255", "fe80::1%23-fe80::ff%23"
         //            also shortcut notation: "192.168.1.1-7" (IPv4 only)
-        private static Regex m3_regex = new Regex(@"^(?<begin>([\d.]+)|([\da-f:]+(:[\d.]+)?(%\w+)?))[ \t]*[\-–][ \t]*(?<end>([\d.]+)|([\da-f:]+(:[\d.]+)?(%\w+)?))$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex m3_regex = new Regex(@"^(?<begin>([\d.]+)|([\da-f:]+(:[\d.]+)?(%\w+)?))[ \t]*[\-–][ \t]*(?<end>([\d.]+)|([\da-f:]+(:[\d.]+)?(%\w+)?))$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
         // Pattern 4. Bit mask range: "192.168.0.0/255.255.255.0"
-        private static Regex m4_regex = new Regex(@"^(?<adr>([\d.]+)|([\da-f:]+(:[\d.]+)?(%\w+)?))[ \t]*/[ \t]*(?<bitmask>[\da-f\.:]+)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
+        private static readonly Regex m4_regex = new Regex(@"^(?<adr>([\d.]+)|([\da-f:]+(:[\d.]+)?(%\w+)?))[ \t]*/[ \t]*(?<bitmask>[\da-f\.:]+)$", RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
-        public IPAddress Begin { get; set; }
+        private IPAddress _Begin;
 
-        public IPAddress End { get; set; }
+        public IPAddress Begin { get { return _Begin; } set { _Begin = value; _Operator = null; _prefixLength = EMPTYPREFIXLENGTH; } }
+
+        private IPAddress _End;
+
+        public IPAddress End { get { return _End; } set { _End = value; _Operator = null; _prefixLength = EMPTYPREFIXLENGTH; } }
+
+        private IRangeOperator _Operator;
+
+        private IRangeOperator Operator
+        {
+            get
+            {
+                if (_Operator == null) _Operator = RangeOperatorFactory.Create(this);
+                return _Operator;
+            }
+        }
+
+        // variable for store prefix length
+        private int _prefixLength = EMPTYPREFIXLENGTH;
+
 
         /// <summary>
         /// Creates an empty range object, equivalent to "0.0.0.0/0".
@@ -147,13 +171,13 @@ namespace NetTools
             End = parsed.End;
         }
 
-#if NET45
+#if NETFRAMEWORK
         protected IPAddressRange(SerializationInfo info, StreamingContext context)
         {
             var names = new List<string>();
             foreach (var item in info) names.Add(item.Name);
 
-            Func<string, IPAddress> deserialize = (name) => names.Contains(name) ?
+            IPAddress deserialize(string name) => names.Contains(name) ?
                  IPAddress.Parse(info.GetValue(name, typeof(object)).ToString()) :
                  new IPAddress(0L);
 
@@ -172,37 +196,20 @@ namespace NetTools
 
         public bool Contains(IPAddress ipaddress)
         {
-            if (ipaddress == null)
-                throw new ArgumentNullException(nameof(ipaddress));
+            if (ipaddress == null) throw new ArgumentNullException(nameof(ipaddress));
 
+            var rangeOperator = this.Operator;
             if (ipaddress.AddressFamily != this.Begin.AddressFamily) return false;
-
-            var offset = 0;
-            if (Begin.IsIPv4MappedToIPv6 && ipaddress.IsIPv4MappedToIPv6)
-            {
-                offset = 12; //ipv4 has prefix of 10 zero bytes and two 255 bytes. 
-            }
-
-            var adrBytes = ipaddress.GetAddressBytes();
-            return Bits.LtECore(this.Begin.GetAddressBytes(), adrBytes, offset) && Bits.GtECore(this.End.GetAddressBytes(), adrBytes, offset);
+            return rangeOperator.Contains(ipaddress);
         }
 
         public bool Contains(IPAddressRange range)
         {
-            if (range == null)
-                throw new ArgumentNullException(nameof(range));
+            if (range == null) throw new ArgumentNullException(nameof(range));
 
+            var rangeOperator = this.Operator;
             if (this.Begin.AddressFamily != range.Begin.AddressFamily) return false;
-
-            var offset = 0;
-            if (Begin.IsIPv4MappedToIPv6 && range.Begin.IsIPv4MappedToIPv6)
-            {
-                offset = 12; //ipv4 has prefix of 10 zero bytes and two 255 bytes. 
-            }
-
-            return
-                Bits.LtECore(this.Begin.GetAddressBytes(), range.Begin.GetAddressBytes(), offset) &&
-                Bits.GtECore(this.End.GetAddressBytes(), range.End.GetAddressBytes(), offset);
+            return rangeOperator.Contains(range);
         }
 
         public static IPAddressRange Parse(string ipRangeString)
@@ -324,10 +331,7 @@ namespace NetTools
 
         public IEnumerator<IPAddress> GetEnumerator()
         {
-            var first = Begin.GetAddressBytes();
-            var last = End.GetAddressBytes();
-            for (var ip = first; Bits.LtECore(ip, last); ip = Bits.Increment(ip))
-                yield return new IPAddress(ip);
+            return Operator.GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
@@ -352,7 +356,7 @@ namespace NetTools
 
         public override bool Equals(object obj)
         {
-            if (ReferenceEquals(null, obj)) return false;
+            if (obj is null) return false;
             if (ReferenceEquals(this, obj)) return true;
             if (obj.GetType() != this.GetType()) return false;
 
@@ -367,22 +371,18 @@ namespace NetTools
             return hashCode;
         }
 
-        public int GetPrefixLength()
+        private int getPrefixLength()
         {
-            byte[] byteBegin = Begin.GetAddressBytes();
-            byte[] byteEnd = End.GetAddressBytes();
+            var byteBegin = Begin.GetAddressBytes();
 
             // Handle single IP
-            if (Begin.Equals(End))
-            {
-                return byteBegin.Length * 8;
-            }
+            if (Begin.Equals(End)) return byteBegin.Length * 8;
 
-            int length = byteBegin.Length * 8;
+            var length = byteBegin.Length * 8;
 
-            for (int i = 0; i < length; i++)
+            for (var i = 0; i < length; i++)
             {
-                byte[] mask = Bits.GetBitMask(byteBegin.Length, i);
+                var mask = Bits.GetBitMask(byteBegin.Length, i);
                 if (new IPAddress(Bits.And(byteBegin, mask)).Equals(Begin))
                 {
                     if (new IPAddress(Bits.Or(byteBegin, Bits.Not(mask))).Equals(End))
@@ -392,6 +392,15 @@ namespace NetTools
                 }
             }
             throw new FormatException(string.Format("{0} is not a CIDR Subnet", ToString()));
+        }
+
+        public int GetPrefixLength()
+        {
+            if (_prefixLength == EMPTYPREFIXLENGTH)
+            {
+                _prefixLength = getPrefixLength();
+            }
+            return _prefixLength;
         }
 
         /// <summary>
@@ -414,7 +423,7 @@ namespace NetTools
         /// <summary>
         /// Returns the input typed as IEnumerable&lt;IPAddress&gt;
         /// </summary>
-        public IEnumerable<IPAddress> AsEnumerable() => (this as IEnumerable<IPAddress>);
+        public IEnumerable<IPAddress> AsEnumerable() => Operator;
 
         private IEnumerable<KeyValuePair<string, string>> GetDictionaryItems()
         {

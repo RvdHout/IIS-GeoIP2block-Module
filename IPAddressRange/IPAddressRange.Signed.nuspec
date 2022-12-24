@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<package >
+  <metadata>
+    <id>$packageId$.Signed</id>
+    <title>$title$</title>
+    <version>$version$</version>
+    <authors>$authors$</authors>
+    <owners>$authors$</owners>
+    <license type="expression">$licenseExpression$</license>
+    <projectUrl>$projectUrl$</projectUrl>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <summary>$summary$</summary>
+    <description>$description$</description>
+    <releaseNotes>
+      <![CDATA[
+      $releaseNotes$
+      ]]>
+    </releaseNotes>
+    <copyright>$copyright$</copyright>
+    <tags>$tags$</tags>
+    <icon>nupkg-icon.png</icon>
+    <dependencies>
+      <dependency id="IPAddressRange" version="$version$"/>
+    </dependencies>
+  </metadata>
+  <files>
+    <file src="..\.assets\nupkg-icon.png" target="nupkg-icon.png" />
+  </files>
+</package>

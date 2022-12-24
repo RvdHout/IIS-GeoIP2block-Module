@@ -26,21 +26,26 @@ namespace MaxMind.GeoIP2.Model
         [Constructor]
         public Traits(
             [Parameter("autonomous_system_number")] long? autonomousSystemNumber = null,
-            [Parameter("autonomous_system_organization")] string autonomousSystemOrganization = null,
-            [Parameter("connection_type")] string connectionType = null,
-            string domain = null,
-            [Inject("ip_address")] string ipAddress = null,
+            [Parameter("autonomous_system_organization")] string? autonomousSystemOrganization = null,
+            [Parameter("connection_type")] string? connectionType = null,
+            string? domain = null,
+            [Inject("ip_address")] string? ipAddress = null,
             [Parameter("is_anonymous")] bool isAnonymous = false,
             [Parameter("is_anonymous_proxy")] bool isAnonymousProxy = false,
             [Parameter("is_anonymous_vpn")] bool isAnonymousVpn = false,
             [Parameter("is_hosting_provider")] bool isHostingProvider = false,
             [Parameter("is_legitimate_proxy")] bool isLegitimateProxy = false,
             [Parameter("is_public_proxy")] bool isPublicProxy = false,
+            [Parameter("is_residential_proxy")] bool isResidentialProxy = false,
             [Parameter("is_satellite_provider")] bool isSatelliteProvider = false,
             [Parameter("is_tor_exit_node")] bool isTorExitNode = false,
-            string isp = null,
-            string organization = null,
-            [Parameter("user_type")] string userType = null)
+            string? isp = null,
+            string? organization = null,
+            [Parameter("user_type")] string? userType = null,
+            [Network] Network? network = null,
+            [Parameter("static_ip_score")] double? staticIPScore = null,
+            [Parameter("user_count")] int? userCount = null
+        )
         {
             AutonomousSystemNumber = autonomousSystemNumber;
             AutonomousSystemOrganization = autonomousSystemOrganization;
@@ -55,13 +60,48 @@ namespace MaxMind.GeoIP2.Model
             IsHostingProvider = isHostingProvider;
             IsLegitimateProxy = isLegitimateProxy;
             IsPublicProxy = isPublicProxy;
+            IsResidentialProxy = isResidentialProxy;
 #pragma warning disable 618
             IsSatelliteProvider = isSatelliteProvider;
 #pragma warning restore 618
             IsTorExitNode = isTorExitNode;
             Isp = isp;
+            Network = network;
             Organization = organization;
+            StaticIPScore = staticIPScore;
+            UserCount = userCount;
             UserType = userType;
+        }
+
+        /// <summary>
+        ///     Constructor for binary compatibility.
+        /// </summary>
+        [Obsolete("For binary compatibility only")]
+        public Traits(
+            long? autonomousSystemNumber,
+            string? autonomousSystemOrganization,
+            string? connectionType,
+            string? domain,
+            string? ipAddress,
+            bool isAnonymous,
+            bool isAnonymousProxy,
+            bool isAnonymousVpn,
+            bool isHostingProvider,
+            bool isLegitimateProxy,
+            bool isPublicProxy,
+            bool isSatelliteProvider,
+            bool isTorExitNode,
+            string? isp,
+            string? organization,
+            string? userType,
+            Network? network,
+            double? staticIPScore,
+            int? userCount
+        ) : this(autonomousSystemNumber, autonomousSystemOrganization, connectionType, domain,
+                 ipAddress, isAnonymous, isAnonymousProxy, isAnonymousVpn, isHostingProvider,
+                 isLegitimateProxy, isPublicProxy, false, isSatelliteProvider, isTorExitNode,
+                 isp, organization, userType, network, staticIPScore, userCount)
+        {
         }
 
         /// <summary>
@@ -87,14 +127,14 @@ namespace MaxMind.GeoIP2.Model
         ///     Insights web service or the Enterprise database.
         /// </summary>
         [JsonProperty("autonomous_system_organization")]
-        public string AutonomousSystemOrganization { get; internal set; }
+        public string? AutonomousSystemOrganization { get; internal set; }
 
         /// <summary>
         ///     The connection type of the IP address. This value is only set when
         ///     using the Enterprise database.
         /// </summary>
         [JsonProperty("connection_type")]
-        public string ConnectionType { get; internal set; }
+        public string? ConnectionType { get; internal set; }
 
         /// <summary>
         ///     The second level domain associated with the IP address. This will
@@ -103,7 +143,7 @@ namespace MaxMind.GeoIP2.Model
         ///     Insights web service or the Enterprise database.
         /// </summary>
         [JsonProperty("domain")]
-        public string Domain { get; internal set; }
+        public string? Domain { get; internal set; }
 
         /// <summary>
         ///     The IP address that the data in the model is for. If you
@@ -113,7 +153,7 @@ namespace MaxMind.GeoIP2.Model
         ///     address locally assigned to it.
         /// </summary>
         [JsonProperty("ip_address")]
-        public string IPAddress { get; internal set; }
+        public string? IPAddress { get; internal set; }
 
         /// <summary>
         ///     This is true if the IP address belongs to any sort of anonymous
@@ -135,15 +175,21 @@ namespace MaxMind.GeoIP2.Model
         public bool IsAnonymousProxy { get; internal set; }
 
         /// <summary>
-        ///     This is true if the IP address belongs to an anonymous VPN
-        ///     system. This value is only available from GeoIP2 Precision
-        ///     Insights.
+        ///     This is true if the IP address is registered to an anonymous
+        ///     VPN provider.
+        ///     This value is only available from GeoIP2 Precision Insights.
         /// </summary>
+        /// <remarks>
+        ///     If a VPN provider does not register subnets under names
+        ///     associated with them, we will likely only flag their IP ranges
+        ///     using the IsHostingProvider property.
+        /// </remarks>
         [JsonProperty("is_anonymous_vpn")]
         public bool IsAnonymousVpn { get; internal set; }
 
         /// <summary>
-        ///     This is true if the IP address belongs to a hosting provider.
+        ///     This is true if the IP address belongs to a hosting or VPN
+        ///     provider (see description of IsAnonymousVpn property).
         ///     This value is only available from GeoIP2 Precision Insights.
         /// </summary>
         [JsonProperty("is_hosting_provider")]
@@ -165,6 +211,14 @@ namespace MaxMind.GeoIP2.Model
         public bool IsPublicProxy { get; internal set; }
 
         /// <summary>
+        ///     This is true if the IP address is on a suspected anonymizing
+        ///     network and belongs to a residential ISP. This value is
+        ///     only available from GeoIP2 Precision Insights.
+        /// </summary>
+        [JsonProperty("is_residential_proxy")]
+        public bool IsResidentialProxy { get; internal set; }
+
+        /// <summary>
         ///     This is true if the IP belong to a satellite Internet provider.
         /// </summary>
         [JsonProperty("is_satellite_provider")]
@@ -184,7 +238,15 @@ namespace MaxMind.GeoIP2.Model
         ///     Enterprise database.
         /// </summary>
         [JsonProperty("isp")]
-        public string Isp { get; internal set; }
+        public string? Isp { get; internal set; }
+
+        /// <summary>
+        ///     The network associated with the record. In particular, this is
+        ///     the largest network where all of the fields besides
+        ///     <c>IPAddress</c> have the same value.
+        /// </summary>
+        [JsonProperty("network")]
+        public Network? Network { get; internal set; }
 
         /// <summary>
         ///     The name of the organization associated with the IP address. This
@@ -192,7 +254,30 @@ namespace MaxMind.GeoIP2.Model
         ///     Enterprise database.
         /// </summary>
         [JsonProperty("organization")]
-        public string Organization { get; internal set; }
+        public string? Organization { get; internal set; }
+
+        /// <summary>
+        ///     An indicator of how static or dynamic an IP address is. The value
+        ///     ranges from 0 to 99.99 with higher values meaning a greater static
+        ///     association. For example, many IP addresses with a <c>UserType</c>
+        ///     of <c>cellular</c> have a lifetime under one. Static Cable/DSL IPs
+        ///     typically have a lifetime above thirty.
+        /// </summary>
+        /// <remark>
+        ///     This indicator can be useful for deciding whether an IP address
+        ///     represents the same user over time.
+        /// </remark>
+        [JsonProperty("static_ip_score")]
+        public double? StaticIPScore { get; internal set; }
+
+        /// <summary>
+        ///     The estimated number of users sharing the IP/network during the past
+        ///     24 hours. For IPv4, the count is for the individual IP. For IPv6, the
+        ///     count is for the /64 network. This value is only available from
+        ///     GeoIP2 Precision Insights.
+        /// </summary>
+        [JsonProperty("user_count")]
+        public int? UserCount { get; internal set; }
 
         /// <summary>
         ///     The user type associated with the IP address. This can be one of
@@ -248,7 +333,7 @@ namespace MaxMind.GeoIP2.Model
         ///     or the Enterprise database.
         /// </summary>
         [JsonProperty("user_type")]
-        public string UserType { get; internal set; }
+        public string? UserType { get; internal set; }
 
         /// <summary>
         ///     Returns a <see cref="string" /> that represents this instance.

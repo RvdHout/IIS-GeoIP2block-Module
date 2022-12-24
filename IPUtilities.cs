@@ -1,4 +1,5 @@
-﻿/* IPUtilities.cs
+﻿#nullable disable
+/* IPUtilities.cs
  *
  * Copyright (C) 2009 Triple IT.  All Rights Reserved.
  * Author: Frank Lippes, Modified for IIS 10 (.Net 4.6) by RvdH

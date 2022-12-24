@@ -1,14 +1,8 @@
-﻿#region
-using System;
-#endregion
-
-
-namespace MaxMind.GeoIP2.Exceptions
+﻿namespace MaxMind.GeoIP2.Exceptions
 {
     /// <summary>
     /// This class represents an authentication error.
     /// </summary>
-    [Serializable]
     public class PermissionRequiredException : GeoIP2Exception
     {
         /// <summary>

@@ -1,4 +1,5 @@
-﻿/* GeoblockHttpModule.cs
+﻿#nullable disable
+/* GeoblockHttpModule.cs
  *
  * Copyright (C) 2009 Triple IT.  All Rights Reserved.
  * Author: Frank Lippes, Modified for IIS 10 (.Net 4.6) by RvdH
@@ -107,12 +108,16 @@ namespace IISGeoIP2blockModule
             //Could be behind proxy, so check forwarded IP's
             string forwardedIps = context.Request.ServerVariables["HTTP_X_FORWARDED_FOR"];
 #if DEBUG
-            this.DbgWrite(string.Format("HTTP_X_FORWARDED_FOR: {0}", forwardedIps));
+            if (!string.IsNullOrEmpty(forwardedIps))
+                this.DbgWrite(string.Format("HTTP_X_FORWARDED_FOR: {0}", forwardedIps));
 #endif
-            if (!String.IsNullOrEmpty(forwardedIps))
+            List<System.Net.IPAddress> forwardedIpsToCheck = new List<System.Net.IPAddress>();
+            if (!string.IsNullOrEmpty(forwardedIps))
             {
-                ipNotificationString += " Forwarded IP's: [" + forwardedIps + "]";
-                //The HTTP_X_FORWARDED_FOR value can contain more then one entry (, seperated)
+#if DEBUG
+                this.DbgWrite(string.Format("Verify all IP addresses in HTTP_X_FORWARDED_FOR: {0}", moduleConfiguration.VerifyAll));
+#endif
+                //The HTTP_X_FORWARDED_FOR value can contain more then one entry, comma seperated
                 string[] ips = forwardedIps.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
                 foreach (string ip in ips)
                 {
@@ -124,12 +129,15 @@ namespace IISGeoIP2blockModule
                             ipAddress = System.Net.IPAddress.Parse(ip.Split(new char[] { ':' }, StringSplitOptions.RemoveEmptyEntries)[0].Trim());
                         else
                             ipAddress = System.Net.IPAddress.Parse(ip.Trim());
-                        ipAddressesToCheck.Add(ipAddress);
+
+                        forwardedIpsToCheck.Add(ipAddress);
                     }
                     catch { }
                 }
             }
+            ipNotificationString += " Forwarded IP Address(es): [" + string.Join(",", forwardedIpsToCheck) + "]";
             // Make new unique list
+            ipAddressesToCheck.AddRange(forwardedIpsToCheck);
             List<System.Net.IPAddress> ipAddressesToCheckUnique = ipAddressesToCheck.Distinct().ToList();
 #if DEBUG
             ArrayList ipToCheck = new ArrayList();
@@ -137,7 +145,7 @@ namespace IISGeoIP2blockModule
             {
                 ipToCheck.Add(ipAddress.ToString());
             }
-            this.DbgWrite(string.Format("Requestor IP address('s): {0}{1}", GeoblockHttpModule.ConvertStringArrayToStringJoin((string[])ipToCheck.ToArray(typeof(string))), Environment.NewLine));
+            this.DbgWrite(string.Format("Request IP Address(es): {0}{1}", GeoblockHttpModule.ConvertStringArrayToStringJoin((string[])ipToCheck.ToArray(typeof(string))), Environment.NewLine));
 #endif
             string[] selectedCountryCodes = new string[moduleConfiguration.SelectedCountryCodes.Count];
             int i = 0;
@@ -156,9 +164,9 @@ namespace IISGeoIP2blockModule
                 exceptionRules[i] = new ExceptionRule(exceptionRule.AllowedMode, exceptionRule.IpAddress, exceptionRule.Mask);
 #if DEBUG
                 if (!string.IsNullOrEmpty(exceptionRule.Mask))
-                    this.DbgWrite(string.Format("exceptionRule: AllowedMode: {0}, Requestor: {1} ({2}){3}", exceptionRule.AllowedMode, exceptionRule.IpAddress, exceptionRule.Mask, Environment.NewLine));
+                    this.DbgWrite(string.Format("exceptionRule: AllowedMode: {0}, IP Range: {1} ({2}){3}", exceptionRule.AllowedMode, exceptionRule.IpAddress, exceptionRule.Mask, Environment.NewLine));
                 else
-                    this.DbgWrite(string.Format("exceptionRule: AllowedMode: {0}, Requestor: {1}{2}", exceptionRule.AllowedMode, exceptionRule.IpAddress, Environment.NewLine));
+                    this.DbgWrite(string.Format("exceptionRule: AllowedMode: {0}, IP Address: {1}{2}", exceptionRule.AllowedMode, exceptionRule.IpAddress, Environment.NewLine));
 #endif
                 i++;
             }
@@ -169,7 +177,6 @@ namespace IISGeoIP2blockModule
             if (!geoBlocker.Allowed(ipAddressesToCheckUnique, out resultMessage))
             {
 #if DEBUG
-                this.DbgWrite(string.Concat("IP is blocked by GeoIP2block Module. ", ipNotificationString, ". ", resultMessage));
                 this.DbgWrite(string.Format("DenyAction: {0} ", moduleConfiguration.DenyAction));
 #endif
                 switch (moduleConfiguration.DenyAction)
@@ -202,7 +209,7 @@ namespace IISGeoIP2blockModule
             }
 #if DEBUG
             else
-            this.DbgWrite(string.Format("DenyAction: {0} ", resultMessage));
+                this.DbgWrite(string.Format("DenyAction: {0} ", resultMessage));
 #endif
         }
 

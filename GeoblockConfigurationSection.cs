@@ -1,3 +1,4 @@
+#nullable disable
 /* GeoblockConfigurationSection.cs
  *
  * Copyright (C) 2009 Triple IT.  All Rights Reserved.

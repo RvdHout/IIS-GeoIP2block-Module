@@ -1,4 +1,5 @@
-﻿/* Geoblocker.cs
+﻿#nullable disable
+/* Geoblocker.cs
  *
  * Copyright (C) 2009 Triple IT.  All Rights Reserved.
  * Author: Frank Lippes, Modified for IIS 10 (.Net 4.6) by RvdH
@@ -16,7 +17,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net;
+using System.Reflection;
 using System.Threading;
 
 namespace IISGeoIP2blockModule
@@ -26,6 +29,15 @@ namespace IISGeoIP2blockModule
     /// </summary>
     public class Geoblocker
     {
+#if DEBUG
+        private readonly static string _my_name;
+
+        static Geoblocker()
+        {
+            _my_name = Assembly.GetExecutingAssembly().GetName().Name.ToString();
+        }
+#endif
+
         //Note: Each request to the server is an entirely new instance of the module
         //      Keeping the GeoIP.dat file in a static memory stream is of no use.
 
@@ -133,7 +145,7 @@ namespace IISGeoIP2blockModule
                         else
                         {
                             //IP found that matches a deny exception rule, deny access immediately
-                            resultMessage = "Blocked IP: [" + ipAddress.ToString() + "]";
+                            resultMessage = string.Format("Blocked IP: [{0}]", ipAddress.ToString());
                             return false;
                         }
                     }
@@ -170,11 +182,17 @@ namespace IISGeoIP2blockModule
 
                     if (!allowed)
                     {
-                        resultMessage = "Blocked IP: [" + ipAddress.ToString() + "] from [" + countryCode + "]";
+                        resultMessage = string.Format("Blocked IP: [{0}] from [{1}]", ipAddress.ToString(), countryCode);
+#if DEBUG
+                        this.DbgWrite("Blocked IP: [{0}] from [{1}]", ipAddress.ToString(), countryCode);
+#endif
                         return false;
                     }
                     else
                     {
+#if DEBUG
+                        this.DbgWrite("Allowed IP: [{0}] from [{1}]", ipAddress.ToString(), countryCode);
+#endif
                         // If a proxy in HTTP_X_FORWARDED_FOR should be ignored if previous checked ip matches previous found country or exceptionRule                      
                         if (!verifyAll)
                             break;
@@ -212,5 +230,20 @@ namespace IISGeoIP2blockModule
                 return true;
             return false;
         }
+
+#if DEBUG
+        private void DbgWrite(string format, params object[] args)
+        {
+            try
+            {
+                string str = string.Format(format, args);
+                Trace.WriteLine(string.Format("[{0}]: {1}", Geoblocker._my_name, str));
+            }
+            catch (Exception exception)
+            {
+                Trace.WriteLine(string.Format("DbgWrite::Error: {0}", exception.Message));
+            }
+        }
+#endif
     }
 }

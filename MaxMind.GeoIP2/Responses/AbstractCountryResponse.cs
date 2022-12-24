@@ -23,23 +23,27 @@ namespace MaxMind.GeoIP2.Responses
             Country = new Country();
             MaxMind = new Model.MaxMind();
             RegisteredCountry = new Country();
-            RepresentedCountry = new RepresentedCountry();
-            Traits = new Traits();
+            //RepresentedCountry = new RepresentedCountry();
+            //Traits = new Traits();
         }
 
         /// <summary>
         ///     Initializes a new instance of the <see cref="AbstractCountryResponse" /> class.
         /// </summary>
-        protected AbstractCountryResponse(Continent continent = null, Country country = null,
-            Model.MaxMind maxMind = null,
-            Country registeredCountry = null, RepresentedCountry representedCountry = null, Traits traits = null)
+        protected AbstractCountryResponse(
+            Continent? continent = null,
+            Country? country = null,
+            Model.MaxMind? maxMind = null,
+            Country? registeredCountry = null/*,
+            RepresentedCountry? representedCountry = null,
+            Traits? traits = null*/)
         {
             Continent = continent ?? new Continent();
             Country = country ?? new Country();
             MaxMind = maxMind ?? new Model.MaxMind();
             RegisteredCountry = registeredCountry ?? new Country();
-            RepresentedCountry = representedCountry ?? new RepresentedCountry();
-            Traits = traits ?? new Traits();
+            //RepresentedCountry = representedCountry ?? new RepresentedCountry();
+            //Traits = traits ?? new Traits();
         }
 
         /// <summary>
@@ -70,6 +74,7 @@ namespace MaxMind.GeoIP2.Responses
         [JsonProperty("registered_country")]
         public Country RegisteredCountry { get; internal set; }
 
+        /*
         /// <summary>
         ///     Represented country record for the requested IP address. The
         ///     represented country is used for things like military bases or
@@ -84,6 +89,7 @@ namespace MaxMind.GeoIP2.Responses
         /// </summary>
         [JsonProperty("traits")]
         public Traits Traits { get; internal set; }
+        */
 
         /// <summary>
         ///     Returns a <see cref="string" /> that represents this instance.
@@ -97,8 +103,8 @@ namespace MaxMind.GeoIP2.Responses
                    + (Continent != null ? "Continent=" + Continent + ", " : "")
                    + (Country != null ? "Country=" + Country + ", " : "")
                    + (RegisteredCountry != null ? "RegisteredCountry=" + RegisteredCountry + ", " : "")
-                   + (RepresentedCountry != null ? "RepresentedCountry=" + RepresentedCountry + ", " : "")
-                   + (Traits != null ? "Traits=" + Traits : "")
+                   //+ (RepresentedCountry != null ? "RepresentedCountry=" + RepresentedCountry + ", " : "")
+                   //+ (Traits != null ? "Traits=" + Traits : "")
                    + "]";
         }
 
@@ -118,8 +124,10 @@ namespace MaxMind.GeoIP2.Responses
             if (RegisteredCountry != null)
                 RegisteredCountry.Locales = locales;
 
+            /*
             if (RepresentedCountry != null)
                 RepresentedCountry.Locales = locales;
+            */
         }
     }
 }

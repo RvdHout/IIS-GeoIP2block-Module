@@ -1,7 +1,6 @@
 ﻿#region
 
 using System;
-using System.Runtime.Serialization;
 #endregion
 
 namespace MaxMind.GeoIP2.Exceptions
@@ -10,8 +9,7 @@ namespace MaxMind.GeoIP2.Exceptions
     ///     This class represents a generic GeoIP2 error. All other exceptions thrown by
     ///     the GeoIP2 API subclass this exception
     /// </summary>
-    [Serializable]
-    public class GeoIP2Exception : Exception, ISerializable
+    public class GeoIP2Exception : Exception
     {
         /// <summary>
         ///     Initializes a new instance of the <see cref="GeoIP2Exception" /> class.

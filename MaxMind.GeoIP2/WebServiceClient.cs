@@ -15,6 +15,10 @@ using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 
+#if !NET45 && !NETSTANDARD1_4
+using Microsoft.Extensions.Options;
+#endif
+
 #endregion
 
 namespace MaxMind.GeoIP2
@@ -60,12 +64,8 @@ namespace MaxMind.GeoIP2
     ///     </para>
     ///     <para>
     ///         For details on the possible errors returned by the web service itself, see
-    ///         <a
-    ///             href="https://dev.maxmind.com/geoip/geoip2/web-services">
-    ///             the GeoIP2 web
-    ///             service documentation
-    ///         </a>
-    ///         .
+    ///         <a href="https://dev.maxmind.com/geoip/geoip2/web-services">the GeoIP2 web
+    ///         service documentation</a>.
     ///     </para>
     /// </summary>
     public class WebServiceClient : IGeoIP2WebServicesClient, IDisposable
@@ -85,6 +85,30 @@ namespace MaxMind.GeoIP2
 
         private static ProductInfoHeaderValue UserAgent => new ProductInfoHeaderValue("GeoIP2-dotnet", Version);
 
+#if !NET45 && !NETSTANDARD1_4
+        /// <summary>
+        ///     Initializes a new instance of the <see cref="WebServiceClient" /> class.
+        /// </summary>
+        /// <param name="httpClient">Injected HttpClient.</param>
+        /// <param name="options">Injected Options.</param>
+        [CLSCompliant(false)]
+        public WebServiceClient(
+            HttpClient httpClient,
+            IOptions<WebServiceClientOptions> options
+        ) : this(
+            options.Value.AccountId,
+            options.Value.LicenseKey,
+            options.Value.Locales,
+            options.Value.Host,
+            options.Value.Timeout,
+            null,
+            false,
+            null,
+            httpClient)
+        {
+        }
+#endif
+
         /// <summary>
         ///     Initializes a new instance of the <see cref="WebServiceClient" /> class.
         /// </summary>
@@ -93,12 +117,27 @@ namespace MaxMind.GeoIP2
         /// <param name="locales">List of locale codes to use in name property from most preferred to least preferred.</param>
         /// <param name="host">The host to use when accessing the service</param>
         /// <param name="timeout">Timeout in milliseconds for connection to web service. The default is 3000.</param>
+        /// <param name="httpMessageHandler">The <c>HttpMessageHandler</c> to use when creating the <c>HttpClient</c>.</param>
         public WebServiceClient(
             int accountId,
             string licenseKey,
-            IEnumerable<string> locales = null,
+            IEnumerable<string>? locales = null,
             string host = "geoip.maxmind.com",
-            int timeout = 3000
+            int timeout = 3000,
+            HttpMessageHandler? httpMessageHandler = null
+        ) : this(accountId, licenseKey, locales, host, timeout, null, false)
+        {
+        }
+
+        /// <summary>
+        ///     Constructor for binary compatibility.
+        /// </summary>
+        public WebServiceClient(
+            int accountId,
+            string licenseKey,
+            IEnumerable<string>? locales,
+            string host,
+            int timeout
         ) : this(accountId, licenseKey, locales, host, timeout, null)
         {
         }
@@ -106,13 +145,18 @@ namespace MaxMind.GeoIP2
         internal WebServiceClient(
             int accountId,
             string licenseKey,
-            IEnumerable<string> locales,
+            IEnumerable<string>? locales,
             string host,
             int timeout,
-            HttpMessageHandler httpMessageHandler
+            HttpMessageHandler? httpMessageHandler,
+            // This is a hack so that we can keep this internal while adding
+            // httpMessageHandler to the public constructor. We can remove
+            // this when we drop .NET 4.5 support and get rid of ISyncClient.
+            bool fakeParam = false
 #if !NETSTANDARD1_4
-            , ISyncClient syncWebRequest = null
+            , ISyncClient? syncWebRequest = null
 #endif
+            , HttpClient? httpClient = null
             )
         {
             var auth = EncodedAuth(accountId, licenseKey);
@@ -120,8 +164,8 @@ namespace MaxMind.GeoIP2
             _locales = locales == null ? new List<string> { "en" } : new List<string>(locales);
 #if !NETSTANDARD1_4
             _syncClient = syncWebRequest ?? new SyncClient(auth, timeout, UserAgent);
-#endif
-            _asyncClient = new AsyncClient(auth, timeout, UserAgent, httpMessageHandler);
+#endif            
+            _asyncClient = new AsyncClient(auth, timeout, UserAgent, httpMessageHandler, httpClient);
         }
 
         /// <summary>
@@ -150,7 +194,7 @@ namespace MaxMind.GeoIP2
         /// <returns>Task that produces an object modeling the Country response</returns>
         public async Task<CountryResponse> CountryAsync()
         {
-            return await CountryAsync((IPAddress)null).ConfigureAwait(false);
+            return await ExecuteAsync<CountryResponse>("country", null).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -179,7 +223,7 @@ namespace MaxMind.GeoIP2
         /// <returns>Task that produces an object modeling the City response</returns>
         public async Task<CityResponse> CityAsync()
         {
-            return await CityAsync((IPAddress)null).ConfigureAwait(false);
+            return await ExecuteAsync<CityResponse>("city", null).ConfigureAwait(false);
         }
 
         /// <summary>
@@ -208,7 +252,7 @@ namespace MaxMind.GeoIP2
         /// <returns>Task that produces an object modeling the Insights response</returns>
         public async Task<InsightsResponse> InsightsAsync()
         {
-            return await InsightsAsync((IPAddress)null).ConfigureAwait(false);
+            return await ExecuteAsync<InsightsResponse>("insights", null).ConfigureAwait(false);
         }
 
 #if !NETSTANDARD1_4
@@ -239,7 +283,7 @@ namespace MaxMind.GeoIP2
         /// <returns>An <see cref="CountryResponse" /></returns>
         public CountryResponse Country()
         {
-            return Country((IPAddress)null);
+            return Execute<CountryResponse>("country", null);
         }
 
         /// <summary>
@@ -268,7 +312,7 @@ namespace MaxMind.GeoIP2
         /// <returns>An <see cref="CityResponse" /></returns>
         public CityResponse City()
         {
-            return City((IPAddress)null);
+            return Execute<CityResponse>("city", null);
         }
 
         /// <summary>
@@ -297,46 +341,46 @@ namespace MaxMind.GeoIP2
         /// <returns>An <see cref="InsightsResponse" /></returns>
         public InsightsResponse Insights()
         {
-            return Insights((IPAddress)null);
+            return Execute<InsightsResponse>("insights", null);
         }
 
 #endif
 
         private static IPAddress ParseIP(string ipAddress)
         {
-            IPAddress ip = null;
+            IPAddress? ip = null;
+
+            // The "ipAddress != null" is here for backwards compatibility with
+            // pre-nullable-reference-types code that might possible rely on the
+            // undocumented feature of passing a null IP string.
             if (ipAddress != null && !IPAddress.TryParse(ipAddress, out ip))
             {
                 throw new GeoIP2Exception($"The specified IP address was incorrectly formatted: {ipAddress}");
             }
-            return ip;
+            return ip!;
         }
 
 #if !NETSTANDARD1_4
 
-        private T Execute<T>(string type, IPAddress ipAddress)
+        private T Execute<T>(string type, IPAddress? ipAddress)
             where T : AbstractCountryResponse, new()
         {
             var uri = BuildUri(type, ipAddress);
-            using (var response = _syncClient.Get(uri))
-            {
-                return HandleResponse<T>(response);
-            }
+            using var response = _syncClient.Get(uri);
+            return HandleResponse<T>(response);
         }
 
 #endif
 
-        private async Task<T> ExecuteAsync<T>(string type, IPAddress ipAddress)
+        private async Task<T> ExecuteAsync<T>(string type, IPAddress? ipAddress)
             where T : AbstractCountryResponse, new()
         {
             var uri = BuildUri(type, ipAddress);
-            using (var response = await _asyncClient.Get(uri).ConfigureAwait(false))
-            {
-                return HandleResponse<T>(response);
-            }
+            using var response = await _asyncClient.Get(uri).ConfigureAwait(false);
+            return HandleResponse<T>(response);
         }
 
-        private Uri BuildUri(string type, IPAddress ipAddress)
+        private Uri BuildUri(string type, IPAddress? ipAddress)
         {
             var endpoint = ipAddress?.ToString() ?? "me";
             return new UriBuilder("https", _host, -1, $"/geoip/v2.1/{type}/{endpoint}").Uri;
@@ -373,32 +417,27 @@ namespace MaxMind.GeoIP2
                     HttpStatusCode.OK, response.RequestUri);
             }
 
-            var sr = new StreamReader(response.Stream);
+            using var sr = new StreamReader(response.Stream);
             try
             {
-                using (JsonReader reader = new JsonTextReader(sr))
+                using JsonReader reader = new JsonTextReader(sr);
+                var settings = new JsonSerializerSettings();
+                settings.Converters.Add(new NetworkConverter());
+                var serializer = JsonSerializer.Create(settings);
+                var model = serializer.Deserialize<T>(reader);
+                if (model == null)
                 {
-                    sr = null;
-                    var serializer = new JsonSerializer();
-                    var model = serializer.Deserialize<T>(reader);
-                    if (model == null)
-                    {
-                        throw new HttpException(
-                            $"Received a 200 response for {response.RequestUri} but there was no message body.",
-                            HttpStatusCode.OK, response.RequestUri);
-                    }
-                    model.SetLocales(_locales);
-                    return model;
+                    throw new HttpException(
+                        $"Received a 200 response for {response.RequestUri} but there was no message body.",
+                        HttpStatusCode.OK, response.RequestUri);
                 }
+                model.SetLocales(_locales);
+                return model;
             }
             catch (JsonReaderException ex)
             {
                 throw new GeoIP2Exception(
                     "Received a 200 response but not decode it as JSON", ex);
-            }
-            finally
-            {
-                sr?.Dispose();
             }
         }
 
@@ -423,7 +462,7 @@ namespace MaxMind.GeoIP2
 
         private static Exception Create4xxException(Response response)
         {
-            string content = null;
+            string? content = null;
 
             if (response.Stream != null)
             {
@@ -440,9 +479,9 @@ namespace MaxMind.GeoIP2
 
             try
             {
-                var webServiceError = JsonConvert.DeserializeObject<WebServiceError>(content);
+                var webServiceError = JsonConvert.DeserializeObject<WebServiceError>(content!);
 
-                return CreateExceptionFromJson(response, webServiceError, content);
+                return CreateExceptionFromJson(response, webServiceError, content!);
             }
             catch (JsonReaderException e)
             {

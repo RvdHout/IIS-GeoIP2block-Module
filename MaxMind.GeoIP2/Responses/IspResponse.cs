@@ -25,16 +25,19 @@ namespace MaxMind.GeoIP2.Responses
         [Constructor]
         public IspResponse(
             [Parameter("autonomous_system_number")] long? autonomousSystemNumber,
-            [Parameter("autonomous_system_organization")] string autonomousSystemOrganization,
-            string isp,
-            string organization,
-            [Inject("ip_address")] string ipAddress)
+            [Parameter("autonomous_system_organization")] string? autonomousSystemOrganization,
+            string? isp,
+            string? organization,
+            [Inject("ip_address")] string? ipAddress,
+            [Network] Network? network = null
+        )
         {
             AutonomousSystemNumber = autonomousSystemNumber;
             AutonomousSystemOrganization = autonomousSystemOrganization;
             Isp = isp;
             Organization = organization;
             IPAddress = ipAddress;
+            Network = network;
         }
 
         /// <summary>
@@ -57,19 +60,19 @@ namespace MaxMind.GeoIP2.Responses
         ///     for the IP address.
         /// </summary>
         [JsonProperty("autonomous_system_organization")]
-        public string AutonomousSystemOrganization { get; internal set; }
+        public string? AutonomousSystemOrganization { get; internal set; }
 
         /// <summary>
         ///     The name of the ISP associated with the IP address.
         /// </summary>
         [JsonProperty("isp")]
-        public string Isp { get; internal set; }
+        public string? Isp { get; internal set; }
 
         /// <summary>
         ///     The name of the organization associated with the IP address.
         /// </summary>
         [JsonProperty("organization")]
-        public string Organization { get; internal set; }
+        public string? Organization { get; internal set; }
 
         /// <summary>
         ///     The IP address that the data in the model is for. If you
@@ -79,6 +82,14 @@ namespace MaxMind.GeoIP2.Responses
         ///     address locally assigned to it.
         /// </summary>
         [JsonProperty("ip_address")]
-        public string IPAddress { get; internal set; }
+        public string? IPAddress { get; internal set; }
+
+        /// <summary>
+        ///     The network associated with the record. In particular, this is
+        ///     the largest network where all of the fields besides
+        ///     <c>IPAddress</c> have the same value.
+        /// </summary>
+        [JsonProperty("network")]
+        public Network? Network { get; internal set; }
     }
 }

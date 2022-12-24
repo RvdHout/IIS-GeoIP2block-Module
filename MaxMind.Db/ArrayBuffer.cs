@@ -3,6 +3,7 @@
 using System;
 using System.IO;
 using System.Text;
+using System.Threading.Tasks;
 
 #endregion
 
@@ -25,6 +26,19 @@ namespace MaxMind.Db
         {
         }
 
+        public static async Task<ArrayBuffer> CreateAsync(string file)
+        {
+            using (var stream = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read, 4096, true))
+            {
+                return await CreateAsync(stream).ConfigureAwait(false);
+            }
+        }
+
+        internal static async Task<ArrayBuffer> CreateAsync(Stream stream)
+        {
+            return new ArrayBuffer(await BytesFromStreamAsync(stream).ConfigureAwait(false));
+        }
+
         private static byte[] BytesFromStream(Stream stream)
         {
             if (stream == null)
@@ -33,21 +47,11 @@ namespace MaxMind.Db
             }
 
             byte[] bytes;
-            
-            // If the stream is within "int" max size, we can read it at once without requiring MemoryStream
-            if (stream.CanSeek && stream.Length <= int.MaxValue)
+
+            using (var memoryStream = new MemoryStream())
             {
-                bytes = new byte[stream.Length];
-                stream.Read(bytes, 0, (int) stream.Length);
-            }
-            else
-            {
-                // Else, use MemoryStream
-                using (var memoryStream = new MemoryStream())
-                {
-                    stream.CopyTo(memoryStream);
-                    bytes = memoryStream.ToArray();
-                }
+                stream.CopyTo(memoryStream);
+                bytes = memoryStream.ToArray();
             }
 
             if (bytes.Length == 0)
@@ -55,7 +59,31 @@ namespace MaxMind.Db
                 throw new InvalidDatabaseException(
                     "There are zero bytes left in the stream. Perhaps you need to reset the stream's position.");
             }
-            
+
+            return bytes;
+        }
+
+        private static async Task<byte[]> BytesFromStreamAsync(Stream stream)
+        {
+            if (stream == null)
+            {
+                throw new ArgumentNullException(nameof(stream), "The database stream must not be null.");
+            }
+
+            byte[] bytes;
+
+            using (var memoryStream = new MemoryStream())
+            {
+                await stream.CopyToAsync(memoryStream).ConfigureAwait(false);
+                bytes = memoryStream.ToArray();
+            }
+
+            if (bytes.Length == 0)
+            {
+                throw new InvalidDatabaseException(
+                    "There are zero bytes left in the stream. Perhaps you need to reset the stream's position.");
+            }
+
             return bytes;
         }
 
