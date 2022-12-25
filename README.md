@@ -19,7 +19,7 @@ https://sourceforge.net/projects/iis7geoblockmod/
 # Requirements
 - IIS 7 or higher
 - Net 4 Application pool running integrated pipeline mode
-- Net 4.8 Extensibility package
+- Net 4.x Extensibility package
 
 # build instructions
 - Minimal requirements Visual Studio Community 2017
