@@ -18,6 +18,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Net;
 using System.Reflection;
 using System.Threading;
@@ -91,7 +92,7 @@ namespace IISGeoIP2blockModule
         /// <remarks>All IP addresses must be allowed for the request to be allowed</remarks>
         public bool Allowed(List<System.Net.IPAddress> ipAddressesToCheck, out string resultMessage)
         {
-            if (ipAddressesToCheck == null || ipAddressesToCheck.Count == 0)
+            if (!ipAddressesToCheck.Any())
             {
                 resultMessage = "No valid IP found in request";
                 return false;

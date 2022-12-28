@@ -106,7 +106,7 @@ namespace IISGeoIP2blockModule
             catch { }
 
             //Could be behind proxy, so check forwarded IP's
-            string forwardedIps = context.Request.ServerVariables["HTTP_X_FORWARDED_FOR"].Trim();
+            string forwardedIps = context.Request.ServerVariables["HTTP_X_FORWARDED_FOR"];
 #if DEBUG
             if (!string.IsNullOrEmpty(forwardedIps))
                 this.DbgWrite(string.Format("HTTP_X_FORWARDED_FOR: {0}", forwardedIps));
