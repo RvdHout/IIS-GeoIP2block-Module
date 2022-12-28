@@ -121,7 +121,7 @@ namespace IISGeoIP2blockModule
                 string[] ips = forwardedIps.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
                 foreach (string ip in ips)
                 {
-                    if (ip.TryParseAsIPEndPoint(out var endpoint))
+                    if (ip.Trim().TryParseAsIPEndPoint(out var endpoint))
                     {
                         forwardedIpsToCheck.Add(endpoint.Address);
                     }
