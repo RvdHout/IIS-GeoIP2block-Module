@@ -115,6 +115,7 @@
     <Compile Include="IPAddressRange\Internals\IRangeOperator.cs" />
     <Compile Include="IPAddressRange\Internals\RangeOperatorFactory.cs" />
     <Compile Include="IPAddressRange\IPAddressRange.cs" />
+    <Compile Include="IPEndPointParserExtension.cs" />
     <Compile Include="IPUtilities.cs" />
     <Compile Include="MaxMind.Db\ArrayBuffer.cs" />
     <Compile Include="MaxMind.Db\Buffer.cs" />

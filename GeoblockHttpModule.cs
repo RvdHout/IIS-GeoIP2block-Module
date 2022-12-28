@@ -106,7 +106,7 @@ namespace IISGeoIP2blockModule
             catch { }
 
             //Could be behind proxy, so check forwarded IP's
-            string forwardedIps = context.Request.ServerVariables["HTTP_X_FORWARDED_FOR"];
+            string forwardedIps = context.Request.ServerVariables["HTTP_X_FORWARDED_FOR"].Trim();
 #if DEBUG
             if (!string.IsNullOrEmpty(forwardedIps))
                 this.DbgWrite(string.Format("HTTP_X_FORWARDED_FOR: {0}", forwardedIps));
@@ -121,18 +121,10 @@ namespace IISGeoIP2blockModule
                 string[] ips = forwardedIps.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
                 foreach (string ip in ips)
                 {
-                    try
+                    if (ip.TryParseAsIPEndPoint(out var endpoint))
                     {
-                        System.Net.IPAddress ipAddress;
-                        // Forwarded IP's in Application Request Routing might contain port
-                        if (ip.Contains(":"))
-                            ipAddress = System.Net.IPAddress.Parse(ip.Split(new char[] { ':' }, StringSplitOptions.RemoveEmptyEntries)[0].Trim());
-                        else
-                            ipAddress = System.Net.IPAddress.Parse(ip.Trim());
-
-                        forwardedIpsToCheck.Add(ipAddress);
+                        forwardedIpsToCheck.Add(endpoint.Address);
                     }
-                    catch { }
                 }
             }
             ipNotificationString += " Forwarded IP Address(es): [" + string.Join(",", forwardedIpsToCheck) + "]";
