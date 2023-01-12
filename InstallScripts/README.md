@@ -2,7 +2,7 @@ Installation example:
 
     IISGeoBlockInstall.ps1 "2.4.1.0" "C:\Program Files\IIS"
 
-Configuration via powershell :
+Configuration for every site via powershell :
 
     $Sites = (Get-Website).Name
     Foreach ($site in $sites) {
