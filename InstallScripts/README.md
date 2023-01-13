@@ -9,7 +9,7 @@ Remote installation example:
         .\IISGeoBlockInstall.ps1 "2.4.1.0" "C:\Program Files\IIS"
     }
 
-Example of module configuration for every site via powershell:
+Example of module configuration for every siteon server via powershell:
 
     $Sites = (Get-IISite).Name
     Foreach ($site in $sites) {
