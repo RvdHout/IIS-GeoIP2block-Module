@@ -12,8 +12,7 @@ $fileSystemAccessRuleArgumentList = $identity, $fileSystemRights, $type
 $fileSystemAccessRule = New-Object -TypeName System.Security.AccessControl.FileSystemAccessRule -ArgumentList $fileSystemAccessRuleArgumentList
 $NewAcl.SetAccessRule($fileSystemAccessRule)
 Set-Acl -Path "C:\Windows\System32\inetsrv\config\schema\geoblockModule_schema.xml" -AclObject $NewAcl
-New-Item -ItemType Directory "$InstallPath\IISGeoIP2blockModule" -Force
-Move-Item "${env:windir}\Temp\IIS-GeoIP2block-Module-$ReleaseVersion\release\*" "$InstallPath\IISGeoIP2blockModule\" -Force
+Move-Item "${env:windir}\Temp\IIS-GeoIP2block-Module-$ReleaseVersion\release" "$InstallPath\IISGeoIP2blockModule" -Force
 [System.Reflection.Assembly]::Load("System.EnterpriseServices, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")            
 $publish = New-Object System.EnterpriseServices.Internal.Publish            
 $publish.GacInstall("$InstallPath\IISGeoIP2blockModule\IISGeoIP2blockModule.dll")
@@ -21,4 +20,4 @@ add-webconfigurationproperty /system.webserver -name Sections -value geoblockMod
 set-webconfigurationproperty /system.webserver -name Sections["geoblockModule"].overrideModeDefault -value Allow
 New-WebManagedModule -Name "Geoblocker" -Type "IISGeoIP2blockModule.GeoblockHttpModule, IISGeoIP2blockModule, Version=$ReleaseVersion, Culture=neutral, PublicKeyToken=50262f380b75b73d" -Precondition "runtimeVersionv4.0"
 ."${env:windir}\Temp\IISManagerGeoBlockReg.vbs" "$ReleaseVersion"
-Remove-Item ${env:windir}\Temp\IIS-GeoIP2block-Module-$ReleaseVersion*,${env:windir}\Temp\IISManagerGeoBlockReg.vbs -Force -Recurse
+Remove-Item ${env:windir}\Temp\IISManagerGeoBlockReg.vbs -Force
