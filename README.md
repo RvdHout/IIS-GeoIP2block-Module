@@ -32,4 +32,4 @@ Or you could add the "IIS Management Console" through installing Windows Feature
 
 # Installation instructions
 
-Automated installation scripts is [here](InstallScripts) and [pdf doc](docs/Geoblocker%20-%20Manual%20-%20v2.4.1.0.pdf) for manual installation.
+[Installation scripts](InstallScripts) and [pdf doc](docs/Geoblocker%20-%20Manual%20-%20v2.4.1.0.pdf) for manual installation.
