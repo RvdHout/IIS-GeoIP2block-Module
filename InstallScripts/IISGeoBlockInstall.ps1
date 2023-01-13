@@ -4,6 +4,14 @@ Invoke-WebRequest https://github.com/6eh01der/IIS-GeoIP2block-Module/releases/do
 Invoke-WebRequest https://github.com/6eh01der/IIS-GeoIP2block-Module/raw/master/InstallScripts/IISManagerGeoBlockReg.vbs -OutFile ${env:windir}\Temp\IISManagerGeoBlockReg.vbs
 Expand-Archive -LiteralPath ${env:windir}\Temp\IIS-GeoIP2block-Module-$ReleaseVersion.zip -DestinationPath "${env:windir}\Temp\IIS-GeoIP2block-Module-$ReleaseVersion\"
 Move-Item "${env:windir}\Temp\IIS-GeoIP2block-Module-$ReleaseVersion\release\geoblockModule_schema.xml" "${env:windir}\System32\inetsrv\config\schema\" -Force
+$NewAcl = Get-Acl -Path "C:\Windows\System32\inetsrv\config\schema\geoblockModule_schema.xml"
+$identity = "BUILTIN\Users"
+$fileSystemRights = "Read"
+$type = "Allow"
+$fileSystemAccessRuleArgumentList = $identity, $fileSystemRights, $type
+$fileSystemAccessRule = New-Object -TypeName System.Security.AccessControl.FileSystemAccessRule -ArgumentList $fileSystemAccessRuleArgumentList
+$NewAcl.SetAccessRule($fileSystemAccessRule)
+Set-Acl -Path "C:\Windows\System32\inetsrv\config\schema\geoblockModule_schema.xml" -AclObject $NewAcl
 New-Item -ItemType Directory "$InstallPath\IISGeoIP2blockModule" -Force
 Move-Item "${env:windir}\Temp\IIS-GeoIP2block-Module-$ReleaseVersion\release\*" "$InstallPath\IISGeoIP2blockModule\" -Force
 [System.Reflection.Assembly]::Load("System.EnterpriseServices, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a")            
