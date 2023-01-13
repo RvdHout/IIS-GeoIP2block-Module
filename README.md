@@ -29,3 +29,7 @@ If above files are not in C:\Windows\System32\inetsrv\
 For IIS 8 and up, you could run this command to enable the IIS Management tools:
 `Dism /online /Enable-Feature /FeatureName:IIS-WebServerManagementTools /All`
 Or you could add the "IIS Management Console" through installing Windows Features -> Internet Information Services ->IIS Management Console.
+
+# Installation instructions
+
+Automated installation scripts is [here](InstallScripts) and [pdf doc](docs/Geoblocker%20-%20Manual%20-%20v2.4.1.0.pdf) for manual installation.
