@@ -10,7 +10,7 @@ Remote installation example:
         Remove-Item IISGeoBlockInstall.ps1 -Force
     }
 
-Example of module configuration for every siteon server via powershell:
+Example of module configuration for every site on server via powershell:
 
     $Sites = (Get-IISite).Name
     Foreach ($site in $sites) {
