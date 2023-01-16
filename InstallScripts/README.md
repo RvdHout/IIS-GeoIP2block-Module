@@ -7,6 +7,7 @@ Remote installation example:
     Invoke-Command -ComputerName ru2-v001-web01 {
         Invoke-WebRequest https://github.com/6eh01der/IIS-GeoIP2block-Module/raw/master/InstallScripts/IISGeoBlockInstall.ps1 -OutFile IISGeoBlockInstall.ps1
         .\IISGeoBlockInstall.ps1 "2.4.1.0" "C:\Program Files\IIS"
+        Remove-Item IISGeoBlockInstall.ps1 -Force
     }
 
 Example of module configuration for every siteon server via powershell:
