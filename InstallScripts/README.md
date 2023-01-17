@@ -20,3 +20,4 @@ Example of module configuration for every site on server via powershell:
     Set-WebConfigurationProperty //geoblockModule -name allowedMode -value False -PSPath "iis:sites/$site"
     Set-WebConfigurationProperty //geoblockModule -name enabled -value True -PSPath "iis:sites/$site"
     }
+where CountryCode is two letters.
