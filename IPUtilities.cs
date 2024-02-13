@@ -44,12 +44,17 @@ namespace IISGeoIP2blockModule
                 var rangeIpv4Priv3 = IPAddressRange.Parse("192.168.0.0/16");
                 //IPv4 Link Local
                 var rangeIpv4Local = IPAddressRange.Parse("169.254.0.0/16");
+                //IPv4 Reserved
+                var rangeIpv4Reserved = IPAddressRange.Parse("0.0.0.0/8");
 
                 //Loopback
                 if (rangeIpv4Loopback.Contains(ipAddress))
                     return true;
                 //Private
                 if (rangeIpv4Priv1.Contains(ipAddress) || rangeIpv4Priv2.Contains(ipAddress) || rangeIpv4Priv3.Contains(ipAddress))
+                    return true;
+                //Reserved
+                if (rangeIpv4Reserved.Contains(ipAddress))
                     return true;
                 //Link Local
                 if (rangeIpv4Local.Contains(ipAddress))

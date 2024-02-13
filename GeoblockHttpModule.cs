@@ -35,6 +35,8 @@ namespace IISGeoIP2blockModule
 #if DEBUG
         private readonly static string _my_name;
 
+        private Guid requestId;
+
         static GeoblockHttpModule()
         {
             GeoblockHttpModule._my_name = Assembly.GetExecutingAssembly().GetName().Name.ToString();
@@ -60,7 +62,7 @@ namespace IISGeoIP2blockModule
             try
             {
                 string str = string.Format(format, args);
-                Trace.WriteLine(string.Format("[{0}]: {1}", GeoblockHttpModule._my_name, str));
+                Trace.WriteLine(string.Format("[{0}]: {1} {2}", GeoblockHttpModule._my_name, requestId, str));
             }
             catch (Exception exception)
             {
@@ -81,6 +83,9 @@ namespace IISGeoIP2blockModule
         /// <param name="e">Not used</param>
         void context_BeginRequest(object sender, EventArgs e)
         {
+#if DEBUG
+            requestId = Guid.NewGuid();
+#endif
             HttpApplication application = (HttpApplication)sender;
             HttpContext context = application.Context;
 
@@ -90,18 +95,23 @@ namespace IISGeoIP2blockModule
             if (!moduleConfiguration.Enabled)
                 return;
 
+#if DEBUG
+            this.DbgWrite(string.Format("Request Uri: {0}", context.Request.Url.AbsoluteUri));
+#endif
+
             //Get the ip's of the request. All the IP's must be checked
             List<System.Net.IPAddress> ipAddressesToCheck = new List<System.Net.IPAddress>();
             string ipNotificationString = string.Empty;
             try
             {
+                // can context.Request.UserHostAddress cause a NullReferenceException exception?
                 string ip = context.Request.UserHostAddress;
 #if DEBUG
                 this.DbgWrite(string.Format("REMOTE_ADDR: {0}", ip));
 #endif
-                ipNotificationString += "Request IP: [" + ip + "]";
-                System.Net.IPAddress ipAddress = System.Net.IPAddress.Parse(ip.Trim());
-                ipAddressesToCheck.Add(ipAddress);
+                ipNotificationString += string.Format("Request IP: [{0}]", ip);
+                if (System.Net.IPAddress.TryParse(ip.Trim(), out System.Net.IPAddress ipAddress))
+                    ipAddressesToCheck.Add(ipAddress);
             }
             catch { }
 
@@ -117,7 +127,8 @@ namespace IISGeoIP2blockModule
 #if DEBUG
                 this.DbgWrite(string.Format("Verify all IP addresses in HTTP_X_FORWARDED_FOR: {0}", moduleConfiguration.VerifyAll));
 #endif
-                //The HTTP_X_FORWARDED_FOR value can contain more then one entry, comma seperated
+                // The HTTP_X_FORWARDED_FOR value can contain more then one entry, comma seperated
+                // X-Forwarded-For: client, proxy1, proxy2
                 string[] ips = forwardedIps.Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
                 foreach (string ip in ips)
                 {
@@ -166,7 +177,11 @@ namespace IISGeoIP2blockModule
             //Perform the check
             string resultMessage;
             Geoblocker geoBlocker = new Geoblocker(moduleConfiguration.GeoIpFilepath, selectedCountryCodes, moduleConfiguration.AllowedMode, exceptionRules, moduleConfiguration.VerifyAll);
+#if DEBUG
+            if (!geoBlocker.Allowed(ipAddressesToCheckUnique, requestId, out resultMessage))
+#else
             if (!geoBlocker.Allowed(ipAddressesToCheckUnique, out resultMessage))
+#endif
             {
 #if DEBUG
                 this.DbgWrite(string.Format("DenyAction: {0} ", moduleConfiguration.DenyAction));
@@ -178,25 +193,51 @@ namespace IISGeoIP2blockModule
                         context.Response.SubStatusCode = 503;
                         context.Response.StatusDescription = string.Concat("IP is blocked by GeoIP2block Module. ", ipNotificationString, ". ", resultMessage);
                         context.Response.SuppressContent = true;
-                        context.Response.End();
+                        //do not call Response.End as this will result in a ThreadAbortException, call ApplicationInstance.CompleteRequest() instead
+                        //context.Response.End();
+                        context.ApplicationInstance.CompleteRequest();
                         break;
                     case "Forbidden":
                         context.Response.StatusCode = 403;
                         context.Response.SubStatusCode = 503;
                         context.Response.StatusDescription = string.Concat("IP is blocked by GeoIP2block Module. ", ipNotificationString, ". ", resultMessage);
                         context.Response.SuppressContent = true;
-                        context.Response.End();
+                        //do not call Response.End as this will result in a ThreadAbortException, call ApplicationInstance.CompleteRequest() instead
+                        //context.Response.End();
+                        context.ApplicationInstance.CompleteRequest();
                         break;
                     case "NotFound":
                         context.Response.StatusCode = 404;
                         context.Response.SubStatusCode = 503;
                         context.Response.StatusDescription = string.Concat("IP is blocked by GeoIP2block Module. ", ipNotificationString, ". ", resultMessage);
                         context.Response.SuppressContent = true;
-                        context.Response.End();
+                        //do not call Response.End as this will result in a ThreadAbortException, call ApplicationInstance.CompleteRequest() instead
+                        //context.Response.End();
+                        context.ApplicationInstance.CompleteRequest();
+                        break;
+                    case "Gone":
+                        context.Response.StatusCode = 410;
+                        context.Response.SubStatusCode = 503;
+                        context.Response.StatusDescription = string.Concat("IP is blocked by GeoIP2block Module. ", ipNotificationString, ". ", resultMessage);
+                        context.Response.SuppressContent = true;
+                        //do not call Response.End as this will result in a ThreadAbortException, call ApplicationInstance.CompleteRequest() instead
+                        //context.Response.End();
+                        context.ApplicationInstance.CompleteRequest();
                         break;
                     case "Abort":
                         context.Request.Abort();
                         break;
+#if DEBUG
+                    default:
+                        context.Response.StatusCode = 401;
+                        context.Response.SubStatusCode = 503;
+                        context.Response.StatusDescription = string.Concat("IP is blocked by GeoIP2block Module. ", ipNotificationString, ". ", resultMessage);
+                        context.Response.SuppressContent = true;
+                        //do not call Response.End as this will result in a ThreadAbortException, call ApplicationInstance.CompleteRequest() instead
+                        //context.Response.End();
+                        context.ApplicationInstance.CompleteRequest();
+                        break;
+#endif
                 }
             }
 #if DEBUG

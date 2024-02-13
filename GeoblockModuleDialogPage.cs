@@ -17,6 +17,8 @@
 
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
+using System.Drawing;
 using System.Windows.Forms;
 using Microsoft.Web.Management.Client;
 using Microsoft.Web.Management.Client.Win32;
@@ -47,7 +49,8 @@ namespace IISGeoIP2blockModule
         //Event values
         public bool hasChanges = false;
         public bool formLoaded = false;
-        
+        public bool isValidDatabase = true;
+
         //Interface elements
         private System.Windows.Forms.CheckBox enabledCB;
         private System.Windows.Forms.CheckBox verifyAllCB;
@@ -58,6 +61,7 @@ namespace IISGeoIP2blockModule
         private System.Windows.Forms.TextBox geoIpFilepathTB;
         private System.Windows.Forms.Button geoIpFilepathB;
         private System.Windows.Forms.Label geoIpFilepathL;
+        private System.Windows.Forms.Label geoIpFileinfoL;
         private System.Windows.Forms.CheckedListBox selectedCountryCodesLB;
         private System.Windows.Forms.Label exceptionsL;
         private System.Windows.Forms.Label DenyActionL;
@@ -105,6 +109,7 @@ namespace IISGeoIP2blockModule
             this.geoIpFilepathTB = new System.Windows.Forms.TextBox();
             this.geoIpFilepathB = new System.Windows.Forms.Button();
             this.geoIpFilepathL = new System.Windows.Forms.Label();
+            this.geoIpFileinfoL = new System.Windows.Forms.Label();
             this.selectedCountryCodesLB = new System.Windows.Forms.CheckedListBox();
             this.exceptionsL = new System.Windows.Forms.Label();
             this.DenyActionL = new System.Windows.Forms.Label();
@@ -134,21 +139,25 @@ namespace IISGeoIP2blockModule
             this.comboBoxDenyAction.Top = 60;
             this.comboBoxDenyAction.Name = "comboBoxDenyAction";
             ComboboxItem item1 = new ComboboxItem();
-            item1.Text = "Unauthorized";
+            item1.Text = "Unauthorized (401)";
             item1.Value ="Unauthorized";
             this.comboBoxDenyAction.Items.Add(item1);
             ComboboxItem item2 = new ComboboxItem();
-            item2.Text = "Forbidden";
+            item2.Text = "Forbidden (403)";
             item2.Value = "Forbidden";
             this.comboBoxDenyAction.Items.Add(item2);
             ComboboxItem item3 = new ComboboxItem();
-            item3.Text = "Not Found";
+            item3.Text = "Not Found (404)";
             item3.Value = "NotFound";
             this.comboBoxDenyAction.Items.Add(item3);
             ComboboxItem item4 = new ComboboxItem();
-            item4.Text = "Abort";
-            item4.Value = "Abort";
+            item4.Text = "Gone (410)";
+            item4.Value = "Gone";
             this.comboBoxDenyAction.Items.Add(item4);
+            ComboboxItem item5 = new ComboboxItem();
+            item5.Text = "Abort";
+            item5.Value = "Abort";
+            this.comboBoxDenyAction.Items.Add(item5);
             this.comboBoxDenyAction.SelectedIndex = 0;
             this.comboBoxDenyAction.SelectedIndexChanged += new EventHandler(comboBoxDenyAction_SelectedIndexChanged);
 
@@ -162,13 +171,19 @@ namespace IISGeoIP2blockModule
             this.geoIpFilepathTB.Width = 279;
             this.geoIpFilepathTB.Height = 20;
             this.geoIpFilepathTB.TextChanged += new EventHandler(geoIpFilepathTB_TextChanged);
-            
+            this.geoIpFilepathTB.Validating += new CancelEventHandler(geoIpFilepathTB_Validating);
+
             this.geoIpFilepathB.Left = 209;
             this.geoIpFilepathB.Top = 136;
             this.geoIpFilepathB.Width = 75;
             this.geoIpFilepathB.Height = 23;
             this.geoIpFilepathB.Text = "Select file";
             this.geoIpFilepathB.Click += new System.EventHandler(this.geoIpFilepathB_Click);
+
+            this.geoIpFileinfoL.AutoSize = true;
+            this.geoIpFileinfoL.Left = 5;
+            this.geoIpFileinfoL.Top = 140;
+            this.geoIpFileinfoL.Text = string.Empty;
 
             this.verifyAllCB.AutoSize = true;
             this.verifyAllCB.Left = 5;
@@ -269,6 +284,7 @@ namespace IISGeoIP2blockModule
             Controls.Add(geoIpFilepathTB);
             Controls.Add(geoIpFilepathB);
             Controls.Add(geoIpFilepathL);
+            Controls.Add(geoIpFileinfoL);
             Controls.Add(selectedCountryCodesLB);
             Controls.Add(exceptionsL);
             Controls.Add(DenyActionL);
@@ -356,6 +372,7 @@ namespace IISGeoIP2blockModule
         void DisplayConfiguration()
         {
             enabledCB.Checked = this.moduleConfiguration.Enabled;
+            enabledCB.Enabled = !string.IsNullOrEmpty(this.moduleConfiguration.GeoIpFilepath.Trim()) && System.IO.File.Exists(this.moduleConfiguration.GeoIpFilepath.Trim());
             verifyAllCB.Checked = this.moduleConfiguration.VerifyAll;
             for (int i = 0; i < comboBoxDenyAction.Items.Count; i++)
             {
@@ -371,6 +388,7 @@ namespace IISGeoIP2blockModule
             else
                 deniedRB.Checked = true;
             geoIpFilepathTB.Text = this.moduleConfiguration.GeoIpFilepath;
+            geoIpFileinfoL.Text = getGeoIPDatabaseInfo(geoIpFilepathTB.Text);
 
             //Selected countries
             this.selectedCountryCodesLB.ClearSelected();
@@ -416,31 +434,36 @@ namespace IISGeoIP2blockModule
         /// </summary>
         protected override bool ApplyChanges()
         {
-            this.moduleConfiguration.Enabled = !string.IsNullOrEmpty(geoIpFilepathTB.Text.Trim()) && System.IO.File.Exists(geoIpFilepathTB.Text.Trim()) ? enabledCB.Checked : false;
-            this.moduleConfiguration.VerifyAll = verifyAllCB.Checked;
-            this.moduleConfiguration.DenyAction = (comboBoxDenyAction.SelectedItem as ComboboxItem).Value.ToString();
-            this.moduleConfiguration.AllowedMode = allowedRB.Checked;
-            this.moduleConfiguration.GeoIpFilepath = geoIpFilepathTB.Text;
-
-            this.moduleConfiguration.SelectedCountryCodes.Clear();
-            foreach (Country geoblockItem in selectedCountryCodesLB.CheckedItems)
+            if (this.isValidDatabase)
             {
-                this.moduleConfiguration.SelectedCountryCodes.Add(geoblockItem);
+                this.moduleConfiguration.Enabled = !string.IsNullOrEmpty(geoIpFilepathTB.Text.Trim()) && System.IO.File.Exists(geoIpFilepathTB.Text.Trim()) ? enabledCB.Checked : false;
+                this.moduleConfiguration.VerifyAll = verifyAllCB.Checked;
+                this.moduleConfiguration.DenyAction = (comboBoxDenyAction.SelectedItem as ComboboxItem).Value.ToString();
+                this.moduleConfiguration.AllowedMode = allowedRB.Checked;
+                this.moduleConfiguration.GeoIpFilepath = geoIpFilepathTB.Text;
+
+                this.moduleConfiguration.SelectedCountryCodes.Clear();
+                foreach (Country geoblockItem in selectedCountryCodesLB.CheckedItems)
+                {
+                    this.moduleConfiguration.SelectedCountryCodes.Add(geoblockItem);
+                }
+
+                this.moduleConfiguration.ExceptionRules.Clear();
+                foreach (DataGridViewRow row in this.exceptionRulesDGV.Rows)
+                {
+                    ExceptionRule item = (ExceptionRule)row.DataBoundItem;
+                    this.moduleConfiguration.ExceptionRules.Add(item);
+                }
+
+                UpdateConfiguration();
+
+                hasChanges = false;
+                this.Update();//reloads tasks
+
+                return true;
             }
-
-            this.moduleConfiguration.ExceptionRules.Clear();
-            foreach (DataGridViewRow row in this.exceptionRulesDGV.Rows)
-            {
-                ExceptionRule item = (ExceptionRule)row.DataBoundItem;
-                this.moduleConfiguration.ExceptionRules.Add(item);
-            }
-
-            UpdateConfiguration();
-
-            hasChanges = false;
-            this.Update();//reloads tasks
-
-            return true;
+            MessageBox.Show("This is not a GeoLite2-Country or GeoIP2-Country database");
+            return false;
         }
 
         /// <summary>
@@ -531,6 +554,7 @@ namespace IISGeoIP2blockModule
             if (selectFileDialog.ShowDialog() == DialogResult.OK)
             {
                 geoIpFilepathTB.Text = selectFileDialog.FileName;
+                geoIpFileinfoL.Text = getGeoIPDatabaseInfo(selectFileDialog.FileName);
             }
         }
 
@@ -621,7 +645,18 @@ namespace IISGeoIP2blockModule
 
         private void geoIpFilepathTB_TextChanged(object sender, EventArgs e)
         {
+            geoIpFileinfoL.Text = getGeoIPDatabaseInfo(geoIpFilepathTB.Text);
             ConfigChanged();
+        }
+
+        private void geoIpFilepathTB_Validating(object sender, CancelEventArgs e)
+        {
+            if (string.IsNullOrEmpty(geoIpFilepathTB.Text))
+            {
+                enabledCB.Checked = false;
+                enabledCB.Enabled = false;
+                this.isValidDatabase = true;
+            }
         }
 
         private void allowedRB_CheckedChanged(object sender, EventArgs e)
@@ -643,6 +678,27 @@ namespace IISGeoIP2blockModule
         {
             ConfigChanged();
         }
-        
+
+        private string getGeoIPDatabaseInfo(string path)
+        {
+            if (System.IO.File.Exists(path))
+            {
+                using (var reader = new MaxMind.GeoIP2.DatabaseReader(path, MaxMind.Db.FileAccessMode.MemoryMapped))
+                {
+                    if (reader.Metadata.DatabaseType.ToLower().IndexOf("country") == -1)
+                    {
+                        enabledCB.Enabled = false;
+                        this.isValidDatabase = false;
+                        geoIpFileinfoL.ForeColor = System.Drawing.Color.Red;
+                        return "Invalid GeoIP2 Database Type!";
+                    }
+                    enabledCB.Enabled = true;
+                    this.isValidDatabase = true;
+                    geoIpFileinfoL.ForeColor = SystemColors.ControlText;
+                    return string.Format("{0}, {1}", reader.Metadata.DatabaseType, reader.Metadata.BuildDate);
+                }
+            }
+            return string.Empty;
+        }
     }
 }
