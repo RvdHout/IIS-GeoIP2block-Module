@@ -33,14 +33,9 @@ namespace IISGeoIP2blockModule
 #if DEBUG
         private readonly static string _my_name;
 
-        private readonly static string _my_version;
-
-        private Guid requestId;
-
         static Geoblocker()
         {
             _my_name = Assembly.GetExecutingAssembly().GetName().Name.ToString();
-            _my_version = Assembly.GetExecutingAssembly().GetName().Version.ToString();
         }
 #endif
 
@@ -95,157 +90,115 @@ namespace IISGeoIP2blockModule
         /// <param name="resultMessage">An explanation of the result</param>
         /// <returns>True if access is allowed. False otherwise</returns>
         /// <remarks>All IP addresses must be allowed for the request to be allowed</remarks>
-#if DEBUG
-        public bool Allowed(List<System.Net.IPAddress> ipAddressesToCheck, Guid guid, out string resultMessage)
-#else
         public bool Allowed(List<System.Net.IPAddress> ipAddressesToCheck, out string resultMessage)
-#endif
         {
-            requestId = guid;
-
             if (!ipAddressesToCheck.Any())
             {
                 resultMessage = "No valid IP found in request";
                 return false;
             }
 
-            try
+            using (var reader = new MaxMind.GeoIP2.DatabaseReader(geoIpFilepath, MaxMind.Db.FileAccessMode.MemoryMapped))
             {
-                using (var reader = new MaxMind.GeoIP2.DatabaseReader(geoIpFilepath, MaxMind.Db.FileAccessMode.MemoryMapped))
+                //sanity check
+                if (reader == null)
                 {
-                    //sanity check
-                    if (reader == null)
+                    resultMessage = "IP check failed";
+                    return true;
+                }
+
+                foreach (System.Net.IPAddress ipAddress in ipAddressesToCheck)
+                {
+                    //first check if the IP is a private ip. It turns out that proxy servers put private ip addresses in the X_FORWARDED_FOR header.
+                    //we won't base our geoblocking on private ip addresses
+                    if (IPUtilities.IsPrivateIpAddress(ipAddress))
+                        continue;
+
+                    //next check the exception rules
+                    bool matchedOnExceptionRule = false;
+                    bool allowedByExceptionRule = false;
+                    foreach (ExceptionRule exceptionRule in exceptionRules)
                     {
-                        resultMessage = "IP check failed";
-                        return true;
-                    }
-
-#if DEBUG
-                    this.DbgWrite("Module version: {0}, Database: {1}, {2}", _my_version, reader.Metadata.DatabaseType, reader.Metadata.BuildDate);
-#endif
-
-                    foreach (System.Net.IPAddress ipAddress in ipAddressesToCheck)
-                    {
-                        //first check if the IP is a private ip. It turns out that proxy servers put private ip addresses in the X_FORWARDED_FOR header.
-                        //we won't base our geoblocking on private ip addresses
-                        if (IPUtilities.IsPrivateIpAddress(ipAddress))
-                            continue;
-
-                        //next check the exception rules
-                        bool matchedOnExceptionRule = false;
-                        bool allowedByExceptionRule = false;
-                        foreach (ExceptionRule exceptionRule in exceptionRules)
+                        if (IpAddressMatchesExceptionRule(ipAddress, exceptionRule))
                         {
-                            if (IpAddressMatchesExceptionRule(ipAddress, exceptionRule))
-                            {
-                                matchedOnExceptionRule = true;
-                                if (exceptionRule.AllowedMode)
-                                    allowedByExceptionRule = true;
-                                else
-                                {
-                                    allowedByExceptionRule = false;
-                                    //one IP denied = deny access alltogether
-                                    break;
-                                }
-                            }
-                        }
-                        if (matchedOnExceptionRule)
-                        {
-                            if (allowedByExceptionRule)
-                            {
-#if DEBUG
-                                this.DbgWrite("Allowed IP: [{0}] by Exception Rule", ipAddress.ToString());
-#endif
-                                //IP found that matches an allow exception rule, don't check the country
-                                //We continue if verifyAll is specified, because another IP could be denied
-                                if (verifyAll)
-                                    continue;
-                                else
-                                    break;
-                            }
+                            matchedOnExceptionRule = true;
+                            if (exceptionRule.AllowedMode)
+                                allowedByExceptionRule = true;
                             else
                             {
-#if DEBUG
-                                this.DbgWrite("Blocked IP: [{0}] by Exception Rule", ipAddress.ToString());
-#endif
-                                //IP found that matches a deny exception rule, deny access immediately
-                                resultMessage = string.Format("Blocked IP: [{0}]", ipAddress.ToString());
-                                return false;
+                                allowedByExceptionRule = false;
+                                //one IP denied = deny access alltogether
+                                break;
                             }
                         }
-
-                        if (reader.Metadata.DatabaseType.ToLower().IndexOf("country") == -1)
-                            throw new System.InvalidOperationException("This is not a GeoLite2-Country or GeoIP2-Country database");
-
-                        string countryCode = string.Empty;
-                        //not found in exception rule, so base access rights on the country
-                        try
+                    }
+                    if (matchedOnExceptionRule)
+                    {
+                        if (allowedByExceptionRule)
                         {
-                            MaxMind.GeoIP2.Responses.CountryResponse countryResponse = reader.Country(ipAddress);
-                            countryCode = !string.IsNullOrEmpty(countryResponse.Country.IsoCode) ? countryResponse.Country.IsoCode : !string.IsNullOrEmpty(countryResponse.RegisteredCountry.IsoCode) ? countryResponse.RegisteredCountry.IsoCode : string.Empty;
-                        }
-                        catch (MaxMind.GeoIP2.Exceptions.AddressNotFoundException e)
-                        {
-#if DEBUG
-                            this.DbgWrite("Exception occurred: {0}", e.Message);
-#endif
-                        }
-                        catch (MaxMind.GeoIP2.Exceptions.PermissionRequiredException e)
-                        {
-#if DEBUG
-                            this.DbgWrite("Exception occurred: {0}", e.Message);
-#endif
-                        }
-                        catch (MaxMind.GeoIP2.Exceptions.GeoIP2Exception e)
-                        {
-#if DEBUG
-                            this.DbgWrite("Exception occurred: {0}", e.Message);
-#endif
-                        }
-                        finally
-                        {
-                            if (string.IsNullOrEmpty(countryCode))
-                                countryCode = "--";
-                        }
-
-                        bool selected = CountryCodeSelected(countryCode);
-                        bool allowed = (selected == allowedMode);
-
-                        /*
-                         * allowedmode     selected     allowed
-                         *  1               1            1
-                         *  1               0            0
-                         *  0               1            0
-                         *  0               0            1
-                        */
-
-                        if (!allowed)
-                        {
-                            resultMessage = string.Format("Blocked IP: [{0}] from [{1}]", ipAddress.ToString(), countryCode);
-#if DEBUG
-                            this.DbgWrite("Blocked IP: [{0}] from [{1}]", ipAddress.ToString(), countryCode);
-#endif
-                            return false;
+                            //IP found that matches an allow exception rule, don't check the country
+                            //We continue if verifyAll is specified, because another IP could be denied
+                            if (verifyAll)
+                                continue;
+                            else
+                                break;
                         }
                         else
                         {
-#if DEBUG
-                            this.DbgWrite("Allowed IP: [{0}] from [{1}]", ipAddress.ToString(), countryCode);
-#endif
-                            // If a proxy in HTTP_X_FORWARDED_FOR should be ignored if previous checked ip matches previous found country or exceptionRule                      
-                            if (!verifyAll)
-                                break;
+                            //IP found that matches a deny exception rule, deny access immediately
+                            resultMessage = string.Format("Blocked IP: [{0}]", ipAddress.ToString());
+                            return false;
                         }
                     }
-                }
-            }
-            catch (Exception e)
-            {
+
+                    if (reader.Metadata.DatabaseType.ToLower().IndexOf("country") == -1)
+                        throw new System.InvalidOperationException("This is not a GeoLite2-Country or GeoIP2-Country database");
+
+                    string countryCode = string.Empty;
+                    //not found in exception rule, so base access rights on the country
+                    try
+                    {
+                        MaxMind.GeoIP2.Responses.CountryResponse countryResponse = reader.Country(ipAddress);
+                        countryCode = !string.IsNullOrEmpty(countryResponse.Country.IsoCode) ? countryResponse.Country.IsoCode : !string.IsNullOrEmpty(countryResponse.RegisteredCountry.IsoCode) ? countryResponse.RegisteredCountry.IsoCode : string.Empty;
+                    }
+                    catch (MaxMind.GeoIP2.Exceptions.AddressNotFoundException) { }
+                    catch (MaxMind.GeoIP2.Exceptions.PermissionRequiredException) { }
+                    catch (MaxMind.GeoIP2.Exceptions.GeoIP2Exception) { }
+                    finally
+                    {
+                        if (string.IsNullOrEmpty(countryCode))
+                            countryCode = "--";
+                    }
+
+                    bool selected = CountryCodeSelected(countryCode);
+                    bool allowed = (selected == allowedMode);
+
+                    /*
+                     * allowedmode     selected     allowed
+                     *  1               1            1
+                     *  1               0            0
+                     *  0               1            0
+                     *  0               0            1
+                    */
+
+                    if (!allowed)
+                    {
+                        resultMessage = string.Format("Blocked IP: [{0}] from [{1}]", ipAddress.ToString(), countryCode);
 #if DEBUG
-                this.DbgWrite("Exception occurred: {0}", e.Message);
+                        this.DbgWrite("Blocked IP: [{0}] from [{1}]", ipAddress.ToString(), countryCode);
 #endif
-                resultMessage = "IP check failed";
-                return true;
+                        return false;
+                    }
+                    else
+                    {
+#if DEBUG
+                        this.DbgWrite("Allowed IP: [{0}] from [{1}]", ipAddress.ToString(), countryCode);
+#endif
+                        // If a proxy in HTTP_X_FORWARDED_FOR should be ignored if previous checked ip matches previous found country or exceptionRule                      
+                        if (!verifyAll)
+                            break;
+                    }
+                }
             }
             resultMessage = "None";
             return true;
@@ -285,7 +238,7 @@ namespace IISGeoIP2blockModule
             try
             {
                 string str = string.Format(format, args);
-                Trace.WriteLine(string.Format("[{0}]: {1} {2}", Geoblocker._my_name, requestId, str));
+                Trace.WriteLine(string.Format("[{0}]: {1}", Geoblocker._my_name, str));
             }
             catch (Exception exception)
             {

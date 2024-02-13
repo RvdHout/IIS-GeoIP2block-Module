@@ -40,9 +40,8 @@ namespace IISGeoIP2blockModule
             System.Drawing.Bitmap ico = new System.Drawing.Bitmap(icoStream);
             icoStream.Close();
 
-            string description = $"[{System.Reflection.Assembly.GetExecutingAssembly().GetName().Version.ToString()}] Blocks access by country referenced by client IP address.";
             IControlPanel controlPanel = (IControlPanel)GetService(typeof(IControlPanel));
-            ModulePageInfo modulePageInfo = new ModulePageInfo(this, typeof(GeoblockModuleDialogPage), "Geoblock Module", "Blocks access by country referenced by client IP address.", ico, ico, description);
+            ModulePageInfo modulePageInfo = new ModulePageInfo(this, typeof(GeoblockModuleDialogPage), "Geoblock Module", "Blocks access by country referenced by client IP address.", ico, ico, "Blocks access by country referenced by client IP address.");
 
             controlPanel.RegisterPage(ControlPanelCategoryInfo.Security, modulePageInfo);
         }
