@@ -26,7 +26,10 @@ namespace MaxMind.Db
             // easily available from C#.
             var objectNamespace = useGlobalNamespace ? "Global" : "Local";
 
-            string? mapName = $"{objectNamespace}\\{fileInfo.FullName.Replace("\\", "-")}-{Length}";
+            //string? mapName = $"{objectNamespace}\\{fileInfo.FullName.Replace("\\", "-")}-{Length}";
+            int processId = System.Diagnostics.Process.GetCurrentProcess().Id;
+            //System.Diagnostics.Debug.WriteLine($"[IISGeoIP2blockModule]: process id {processId}");
+            string? mapName = $"{objectNamespace}\\{processId}-{fileInfo.FullName.Replace("\\", "-")}-{Length}";
             lock (FileLocker)
             {
                 try
