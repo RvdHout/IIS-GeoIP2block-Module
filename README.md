@@ -11,9 +11,10 @@ https://sourceforge.net/projects/iis7geoblockmod/
 - Upgraded to .Net 4.8
 - Supports new GeoIP2 database format (free GeoLite2-Country.mmdb or commercial GeoIP2-Country.mmdb) 
 - Extra deny actions:
-    - Unauthorized
-    - Forbidden
-    - Not Found
+    - Unauthorized (401)
+    - Forbidden (403)
+    - Not Found (404)
+    - Gone (410)
     - Abort
     
 # Requirements
