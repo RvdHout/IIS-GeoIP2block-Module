@@ -97,12 +97,12 @@ namespace IISGeoIP2blockModule
         /// <remarks>All IP addresses must be allowed for the request to be allowed</remarks>
 #if DEBUG
         public bool Allowed(List<System.Net.IPAddress> ipAddressesToCheck, Guid guid, out string resultMessage)
-#else
-        public bool Allowed(List<System.Net.IPAddress> ipAddressesToCheck, out string resultMessage)
-#endif
         {
             requestId = guid;
-
+#else
+        public bool Allowed(List<System.Net.IPAddress> ipAddressesToCheck, out string resultMessage)
+        {
+#endif
             if (!ipAddressesToCheck.Any())
             {
                 resultMessage = "No valid IP found in request";
